@@ -23,8 +23,8 @@ function DebugPage() {
   const qc = useQueryClient();
   const [lastResult, setLastResult] = useState<string>("");
 
-  const pets = useQuery({ queryKey: ["pets"], queryFn: listPetsWithOwner });
-  const owners = useQuery({ queryKey: ["owners"], queryFn: listOwners });
+  const pets = useQuery({ queryKey: ["pets"], queryFn: () => listPetsWithOwner() });
+  const owners = useQuery({ queryKey: ["owners"], queryFn: () => listOwners() });
 
   const createMut = useMutation({
     mutationFn: async () => {
