@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/contexts/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/logo_kiwoko.svg.asset.json";
 
 interface AppShellProps {
   title: string;
