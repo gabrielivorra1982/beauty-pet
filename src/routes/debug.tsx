@@ -9,7 +9,7 @@ import {
   type PetWithOwner,
 } from "@/lib/repository";
 
-export const Route = createFileRoute("/_debug")({
+export const Route = createFileRoute("/debug")({
   head: () => ({
     meta: [
       { title: "Debug — Kiwoko" },
