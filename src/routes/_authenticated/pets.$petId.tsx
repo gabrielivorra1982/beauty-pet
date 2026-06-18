@@ -160,15 +160,38 @@ function PetDetailPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {visits.map((v) => (
-                  <li key={v.id} className="py-2 text-sm">
-                    {new Date(v.visited_at).toLocaleDateString("es-ES")}
-                    {v.recognized_breed ? ` · ${v.recognized_breed}` : ""}
+                  <li key={v.id} className="flex items-center gap-3 py-2">
+                    <div className="size-12 shrink-0 overflow-hidden rounded-md border border-border bg-background-muted">
+                      {v.chosen_cut?.image_url ? (
+                        <img
+                          src={v.chosen_cut.image_url}
+                          alt={v.chosen_cut.title}
+                          className="block h-full w-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1 text-sm">
+                      <p className="truncate font-medium">
+                        {v.chosen_cut?.title ?? "Sin corte elegido"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {new Date(v.visited_at).toLocaleDateString("es-ES")}
+                        {v.recognized_breed ? ` · ${v.recognized_breed}` : ""}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </CardContent>
         </Card>
+
+        <Button asChild className="h-12 w-full">
+          <Link to="/pets/$petId/visit" params={{ petId }}>
+            <Camera /> Nueva visita
+          </Link>
+        </Button>
+
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
