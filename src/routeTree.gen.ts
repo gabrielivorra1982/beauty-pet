@@ -14,6 +14,7 @@ import { Route as DebugRouteImport } from './routes/debug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
+import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticated/rewards'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedPetsIndexRouteImport } from './routes/_authenticated/pets.index'
 import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenticated/owners.index'
@@ -49,6 +50,11 @@ const IndexRoute = IndexRouteImport.update({
 const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRewardsRoute = AuthenticatedRewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/debug': typeof DebugRoute
   '/login': typeof LoginRoute
   '/app': typeof AuthenticatedAppRoute
+  '/rewards': typeof AuthenticatedRewardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRouteWithChildren
   '/owners/new': typeof AuthenticatedOwnersNewRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/debug': typeof DebugRoute
   '/login': typeof LoginRoute
   '/app': typeof AuthenticatedAppRoute
+  '/rewards': typeof AuthenticatedRewardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/owners/new': typeof AuthenticatedOwnersNewRoute
   '/pets/new': typeof AuthenticatedPetsNewRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/debug': typeof DebugRoute
   '/login': typeof LoginRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/_authenticated/rewards': typeof AuthenticatedRewardsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRouteWithChildren
   '/_authenticated/owners/new': typeof AuthenticatedOwnersNewRoute
@@ -180,6 +189,7 @@ export interface FileRouteTypes {
     | '/debug'
     | '/login'
     | '/app'
+    | '/rewards'
     | '/staff'
     | '/owners/$ownerId'
     | '/owners/new'
@@ -198,6 +208,7 @@ export interface FileRouteTypes {
     | '/debug'
     | '/login'
     | '/app'
+    | '/rewards'
     | '/staff'
     | '/owners/new'
     | '/pets/new'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/debug'
     | '/login'
     | '/_authenticated/app'
+    | '/_authenticated/rewards'
     | '/_authenticated/staff'
     | '/_authenticated/owners/$ownerId'
     | '/_authenticated/owners/new'
@@ -271,6 +283,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/staff'
       preLoaderRoute: typeof AuthenticatedStaffRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rewards': {
+      id: '/_authenticated/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof AuthenticatedRewardsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app': {
@@ -396,6 +415,7 @@ const AuthenticatedPetsPetIdRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
+  AuthenticatedRewardsRoute: typeof AuthenticatedRewardsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedOwnersOwnerIdRoute: typeof AuthenticatedOwnersOwnerIdRouteWithChildren
   AuthenticatedOwnersNewRoute: typeof AuthenticatedOwnersNewRoute
@@ -407,6 +427,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppRoute: AuthenticatedAppRoute,
+  AuthenticatedRewardsRoute: AuthenticatedRewardsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedOwnersOwnerIdRoute: AuthenticatedOwnersOwnerIdRouteWithChildren,
   AuthenticatedOwnersNewRoute: AuthenticatedOwnersNewRoute,
