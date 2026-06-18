@@ -1,59 +1,106 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useAuth } from "@/contexts/auth";
-import { Button } from "@/components/ui/button";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { PawPrint, Users, Plus, Activity } from "lucide-react";
+import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { countOwners, countPets } from "@/lib/repository";
+import { useAuth } from "@/contexts/auth";
 
 export const Route = createFileRoute("/_authenticated/app")({
-  component: LandingPage,
+  component: HomePage,
 });
 
-function LandingPage() {
-  const { profile, user, signOut, loading } = useAuth();
-  const navigate = useNavigate();
+function HomePage() {
+  const { profile } = useAuth();
+  const [pets, setPets] = useState<number | null>(null);
+  const [owners, setOwners] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const name = profile?.full_name ?? user?.email ?? "";
-  const role = profile?.role;
-
-  async function handleSignOut() {
-    await signOut();
-    navigate({ to: "/login" });
-  }
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([countPets(), countOwners()])
+      .then(([p, o]) => {
+        if (cancelled) return;
+        setPets(p);
+        setOwners(o);
+      })
+      .catch(() => !cancelled && setError("No se pudieron cargar los totales."));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
-    <main
-      className="mx-auto flex min-h-[100dvh] w-full max-w-md flex-col gap-6 bg-background px-6 py-8"
-      style={{ paddingTop: "max(2rem, env(safe-area-inset-top))", paddingBottom: "max(2rem, env(safe-area-inset-bottom))" }}
-    >
-      <header>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground">Kiwoko</p>
-        <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-          Hola, {loading ? "…" : name}
-        </h1>
-        {role ? (
-          <p className="mt-1 text-sm text-muted-foreground">
-            Rol: <span className="font-medium text-foreground">{role}</span>
+    <AppShell title="Inicio">
+      <div className="space-y-6">
+        <section>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">
+            Hola{profile?.full_name ? `, ${profile.full_name}` : ""}
           </p>
-        ) : null}
-      </header>
+          <h2 className="mt-1 text-2xl font-semibold tracking-tight">Panel del equipo</h2>
+        </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Inicio</CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
-          Esta es la zona del equipo. Las funciones de mascotas, cortes y recompensas llegarán en próximas fases.
-        </CardContent>
-      </Card>
+        <section className="grid grid-cols-2 gap-3">
+          <StatCard label="Mascotas" value={pets} icon={<PawPrint className="size-5" />} />
+          <StatCard label="Dueños" value={owners} icon={<Users className="size-5" />} />
+        </section>
 
-      {role === "admin" ? (
-        <Button asChild variant="outline" className="h-11">
-          <Link to="/staff">Gestionar cuentas del equipo</Link>
-        </Button>
-      ) : null}
+        {error ? <p className="text-sm text-destructive">{error}</p> : null}
 
-      <Button onClick={handleSignOut} variant="ghost" className="h-11 mt-auto">
-        Cerrar sesión
-      </Button>
-    </main>
+        <section className="grid grid-cols-2 gap-3">
+          <Button asChild className="h-12">
+            <Link to="/pets/new">
+              <Plus /> Nueva mascota
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-12">
+            <Link to="/owners/new">
+              <Plus /> Nuevo dueño
+            </Link>
+          </Button>
+        </section>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Activity className="size-4" /> Actividad reciente
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Sin actividad todavía. Las visitas aparecerán aquí cuando empieces a registrarlas.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </AppShell>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number | null;
+  icon: React.ReactNode;
+}) {
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-2 p-4">
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span className="text-xs uppercase tracking-wider">{label}</span>
+          {icon}
+        </div>
+        {value === null ? (
+          <Skeleton className="h-7 w-12" />
+        ) : (
+          <p className="text-2xl font-semibold tracking-tight">{value}</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
