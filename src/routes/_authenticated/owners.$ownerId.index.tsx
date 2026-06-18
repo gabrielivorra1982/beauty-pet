@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pencil, Plus, ChevronRight, Trash2, Mail, Phone, StickyNote } from "lucide-react";
+import { Pencil, Plus, ChevronRight, Trash2, Mail, Phone, StickyNote, ShieldAlert } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { deleteOwner, getOwnerWithPets, type Owner, type Pet } from "@/lib/repository";
+import { getOwnerWithPets, type Owner, type Pet } from "@/lib/repository";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/auth";
 
 export const Route = createFileRoute("/_authenticated/owners/$ownerId/")({
   component: OwnerDetailPage,
@@ -25,6 +27,8 @@ export const Route = createFileRoute("/_authenticated/owners/$ownerId/")({
 function OwnerDetailPage() {
   const { ownerId } = Route.useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const isAdmin = profile?.role === "admin";
   const [data, setData] = useState<(Owner & { pets: Pet[] }) | null | undefined>(undefined);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,13 +43,19 @@ function OwnerDetailPage() {
     };
   }, [ownerId]);
 
-  async function handleDelete() {
+  async function handleGdprDelete() {
     setDeleting(true);
+    setError(null);
     try {
-      await deleteOwner(ownerId);
+      const { data: res, error: fnErr } = await supabase.functions.invoke("gdpr-delete-owner", {
+        body: { owner_id: ownerId },
+      });
+      if (fnErr) throw fnErr;
+      if (!res?.ok) throw new Error(res?.error ?? "No se pudo completar el borrado RGPD.");
       navigate({ to: "/owners" });
-    } catch {
-      setError("No se pudo borrar el dueño.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "No se pudo completar el borrado RGPD.";
+      setError(msg);
       setDeleting(false);
     }
   }
@@ -134,33 +144,48 @@ function OwnerDetailPage() {
           </CardContent>
         </Card>
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="outline" className="h-11 w-full text-destructive hover:text-destructive">
-              <Trash2 /> Borrar dueño
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Borrar a {data.full_name}?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción no se puede deshacer. Se borrarán también sus{" "}
-                {data.pets.length === 1 ? "1 mascota" : `${data.pets.length} mascotas`} y su
-                historial.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDelete}
-                disabled={deleting}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {deleting ? "Borrando…" : "Borrar"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {isAdmin ? (
+          <Card className="border-destructive/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base text-destructive">
+                <ShieldAlert className="size-4" /> Zona RGPD
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Elimina al dueño y todos sus datos personales. Acción reservada a administradores.
+              </p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" className="h-11 w-full text-destructive hover:text-destructive">
+                    <Trash2 /> Eliminar dueño y todos sus datos (RGPD)
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Eliminar a {data.full_name} y todos sus datos?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta acción es <strong>irreversible</strong>. Se eliminarán de forma
+                      permanente: la ficha del dueño, todas sus mascotas
+                      {data.pets.length > 0 ? ` (${data.pets.length})` : ""}, su historial de
+                      visitas y cortes, sus recompensas y todas sus fotos.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleGdprDelete}
+                      disabled={deleting}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deleting ? "Eliminando…" : "Eliminar definitivamente"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </CardContent>
+          </Card>
+        ) : null}
       </div>
     </AppShell>
   );
