@@ -23,6 +23,7 @@ interface Payload {
   description?: string;
   breed?: string;
   coat?: "con_pelo" | "sin_pelo" | "desconocido";
+  image_url?: string;
 }
 
 Deno.serve(async (req) => {
@@ -54,6 +55,15 @@ Deno.serve(async (req) => {
   }
   if (!payload.pet_id || !payload.title) return json({ error: "Faltan datos" }, 400);
 
+  const descPart = payload.description ? ` ${payload.description}` : "";
+  const editPrompt =
+    `Edita esta fotografia REAL de un perro para mostrar como quedaria tras pasar por la peluqueria canina, ` +
+    `manteniendo la MAXIMA fidelidad con la foto original. Conserva EXACTAMENTE, sin alterarlos: el mismo perro y su identidad, ` +
+    `los rasgos y la expresion facial, la pose y la posicion del cuerpo, el angulo y el encuadre de la camara, el fondo, ` +
+    `la iluminacion, y la complexion y el peso del animal. Lo UNICO que debe cambiar es el pelaje y el corte, que debe quedar asi: ` +
+    `"${payload.title}",${descPart}. El resultado debe ser fotorrealista, con textura de pelo natural y coherente, ` +
+    `como una foto real del mismo perro recien salido de la peluqueria. Sin texto, sin marcas de agua y sin elementos anadidos.`;
+
   const coatText =
     payload.coat === "con_pelo"
       ? "perro con pelo"
@@ -61,12 +71,18 @@ Deno.serve(async (req) => {
         ? "perro sin pelo"
         : "perro";
   const breedText = payload.breed ? `, raza ${payload.breed}` : "";
-  const prompt =
+  const fallbackPrompt =
     `Fotografía de referencia, fondo neutro y limpio, iluminación de estudio suave, de un ${coatText}${breedText} ` +
     `recién salido de peluquería canina con el corte llamado "${payload.title}". ` +
     `${payload.description ?? ""}. Plano entero, encuadre centrado, estilo catálogo de peluquería, sin texto, sin marcas.`;
 
-  // Lovable AI image generation usa /v1/chat/completions con un modelo de imagen.
+  const userContent: unknown = payload.image_url
+    ? [
+        { type: "text", text: editPrompt },
+        { type: "image_url", image_url: { url: payload.image_url } },
+      ]
+    : fallbackPrompt;
+
   const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -75,7 +91,7 @@ Deno.serve(async (req) => {
     },
     body: JSON.stringify({
       model: "google/gemini-2.5-flash-image",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content: userContent }],
       modalities: ["image", "text"],
     }),
   });

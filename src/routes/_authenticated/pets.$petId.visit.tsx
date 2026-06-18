@@ -94,9 +94,9 @@ function NewVisitPage() {
       }
       setAnalysis(data);
       setImages(data.suggestions.map(() => ({ status: "loading" as const })));
-      // Disparar las 4 imágenes en paralelo.
+      // Disparar las 4 imágenes en paralelo, pasando la URL original recién firmada.
       data.suggestions.forEach((s, idx) => {
-        void generateImage(idx, s, data.breed, data.coat);
+        void generateImage(idx, s, data.breed, data.coat, signedUrl);
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al analizar.");
@@ -105,7 +105,13 @@ function NewVisitPage() {
     }
   }
 
-  async function generateImage(idx: number, s: Suggestion, breed: string, coat: Coat) {
+  async function generateImage(
+    idx: number,
+    s: Suggestion,
+    breed: string,
+    coat: Coat,
+    originalUrl: string | null,
+  ) {
     setImages((prev) => {
       const next = [...prev];
       next[idx] = { status: "loading" };
@@ -121,6 +127,7 @@ function NewVisitPage() {
             description: s.description,
             breed,
             coat,
+            image_url: originalUrl ?? undefined,
           },
         },
       );
@@ -143,6 +150,7 @@ function NewVisitPage() {
       });
     }
   }
+
 
   async function confirmVisit() {
     if (!analysis || chosen === null) return;
@@ -334,7 +342,7 @@ function NewVisitPage() {
                               className="h-9"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void generateImage(idx, s, analysis.breed, analysis.coat);
+                                void generateImage(idx, s, analysis.breed, analysis.coat, photoUrl);
                               }}
                             >
                               <RefreshCw /> Reintentar
