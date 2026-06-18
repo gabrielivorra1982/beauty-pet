@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles, Camera } from "lucide-react";
+import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles, Camera, Gift } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { PetAvatar } from "@/components/pet-avatar";
 import {
   AlertDialog,
@@ -19,9 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   deletePet,
+  getNextPendingReward,
   getPetWithOwner,
+  listPetRewards,
   listVisitsByPet,
+  type PetRewardWithRule,
   type PetWithOwner,
+  type RewardRule,
   type VisitWithChosen,
 } from "@/lib/repository";
 
@@ -34,22 +39,37 @@ function PetDetailPage() {
   const navigate = useNavigate();
   const [pet, setPet] = useState<PetWithOwner | null | undefined>(undefined);
   const [visits, setVisits] = useState<VisitWithChosen[] | null>(null);
+  const [rewards, setRewards] = useState<PetRewardWithRule[] | null>(null);
+  const [nextReward, setNextReward] = useState<RewardRule | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getPetWithOwner(petId), listVisitsByPet(petId)])
-      .then(([p, v]) => {
+    (async () => {
+      try {
+        const [p, v, r] = await Promise.all([
+          getPetWithOwner(petId),
+          listVisitsByPet(petId),
+          listPetRewards(petId),
+        ]);
         if (cancelled) return;
         setPet(p);
         setVisits(v);
-      })
-      .catch(() => !cancelled && setError("No se pudo cargar la ficha."));
+        setRewards(r);
+        if (p) {
+          const next = await getNextPendingReward(petId, p.points);
+          if (!cancelled) setNextReward(next);
+        }
+      } catch {
+        if (!cancelled) setError("No se pudo cargar la ficha.");
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, [petId]);
+
 
   async function handleDelete() {
     setDeleting(true);
@@ -103,13 +123,77 @@ function PetDetailPage() {
               <p className="text-sm text-muted-foreground">{labelCoat(pet.coat_type)}</p>
             </div>
             <div className="flex flex-col items-end">
-              <span className="text-xs uppercase tracking-wider text-muted-foreground">Puntos</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">Sellos</span>
               <span className="inline-flex items-center gap-1 text-xl font-semibold tracking-tight">
                 <Sparkles className="size-4" /> {pet.points}
               </span>
             </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Gift className="size-4" /> Fidelización
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {nextReward ? (
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between text-sm">
+                  <span className="font-medium">{nextReward.name}</span>
+                  <span className="text-muted-foreground">
+                    {pet.points} / {nextReward.threshold_visits}
+                  </span>
+                </div>
+                <Progress
+                  value={Math.min(100, (pet.points / nextReward.threshold_visits) * 100)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Faltan {Math.max(0, nextReward.threshold_visits - pet.points)} sellos para{" "}
+                  <span className="text-foreground">
+                    {nextReward.reward_text ?? nextReward.name}
+                  </span>
+                  .
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Al día — no quedan recompensas por delante.
+              </p>
+            )}
+
+            {rewards === null ? (
+              <Skeleton className="h-10 w-full" />
+            ) : rewards.length > 0 ? (
+              <div className="space-y-2">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                  Conseguidas
+                </p>
+                <ul className="space-y-2">
+                  {rewards.map((r) => (
+                    <li
+                      key={r.id}
+                      className="flex items-start gap-3 rounded-md border border-border bg-muted/50 p-3"
+                    >
+                      <Gift className="mt-0.5 size-4 shrink-0 text-foreground" />
+                      <div className="min-w-0 flex-1 text-sm">
+                        <p className="font-medium">{r.reward_rule?.name ?? "Recompensa"}</p>
+                        {r.reward_rule?.reward_text ? (
+                          <p className="text-muted-foreground">{r.reward_rule.reward_text}</p>
+                        ) : null}
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(r.unlocked_at).toLocaleDateString("es-ES")}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
 
         <Card>
           <CardHeader>

@@ -1,19 +1,31 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle } from "lucide-react";
+import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle, Gift, Share2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import {
   createVisitWithSuggestions,
   getPetWithOwner,
+  listPetRewardRuleIds,
+  listPetRewards,
   uploadPetPhoto,
+  type PetRewardWithRule,
   type PetWithOwner,
 } from "@/lib/repository";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/pets/$petId/visit")({
   component: NewVisitPage,
@@ -44,6 +56,8 @@ function NewVisitPage() {
   const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [unlocked, setUnlocked] = useState<PetRewardWithRule[] | null>(null);
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -157,6 +171,9 @@ function NewVisitPage() {
     setSaving(true);
     setError(null);
     try {
+      // Snapshot de recompensas ya desbloqueadas antes de guardar la visita.
+      const beforeIds = new Set(await listPetRewardRuleIds(petId));
+
       await createVisitWithSuggestions({
         pet_id: petId,
         staff_id: user?.id ?? null,
@@ -174,12 +191,68 @@ function NewVisitPage() {
           };
         }),
       });
+
+      // Diff: el trigger ya habrá insertado las nuevas pet_rewards si tocaba.
+      const after = await listPetRewards(petId);
+      const newly = after.filter((r) => !beforeIds.has(r.reward_rule_id));
+      if (newly.length > 0) {
+        setUnlocked(newly);
+        setSaving(false);
+        return;
+      }
       navigate({ to: "/pets/$petId", params: { petId } });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo registrar la visita.");
       setSaving(false);
     }
   }
+
+  async function handleShare() {
+    if (!unlocked || unlocked.length === 0 || !pet) return;
+    const names = unlocked
+      .map((r) => r.reward_rule?.reward_text ?? r.reward_rule?.name ?? "Recompensa")
+      .join(", ");
+    const text = `¡${pet.name} ha conseguido: ${names}! 🎉 #Kiwoko`;
+    const chosenImg = chosen !== null ? images[chosen] : undefined;
+    const imgUrl = chosenImg?.status === "ready" ? chosenImg.url : null;
+
+    try {
+      const nav = typeof navigator !== "undefined" ? navigator : null;
+      if (nav?.share) {
+        const shareData: ShareData = { title: "Kiwoko", text };
+        if (imgUrl) {
+          try {
+            const resp = await fetch(imgUrl);
+            const blob = await resp.blob();
+            const file = new File([blob], "corte.jpg", { type: blob.type || "image/jpeg" });
+            const canShareFiles =
+              typeof nav.canShare === "function" && nav.canShare({ files: [file] });
+            if (canShareFiles) shareData.files = [file];
+          } catch {
+            // sin imagen, sigue con texto.
+          }
+        }
+        await nav.share(shareData);
+        setShareMsg("Compartido.");
+        return;
+      }
+      if (nav?.clipboard) {
+        await nav.clipboard.writeText(text);
+        setShareMsg("Copiado al portapapeles.");
+        return;
+      }
+      setShareMsg("Compartir no está disponible en este dispositivo.");
+    } catch {
+      setShareMsg("No se pudo compartir.");
+    }
+  }
+
+  function closeCelebration() {
+    setUnlocked(null);
+    setShareMsg(null);
+    navigate({ to: "/pets/$petId", params: { petId } });
+  }
+
 
   if (pet === undefined) {
     return (
@@ -402,9 +475,59 @@ function NewVisitPage() {
           </div>
         ) : null}
       </div>
+
+      <Dialog
+        open={unlocked !== null && unlocked.length > 0}
+        onOpenChange={(o) => {
+          if (!o) closeCelebration();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="size-5" /> ¡Recompensa desbloqueada!
+            </DialogTitle>
+            <DialogDescription>
+              {pet
+                ? `${pet.name} acaba de conseguir ${
+                    unlocked && unlocked.length > 1 ? "nuevas recompensas" : "una nueva recompensa"
+                  }.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2">
+            {(unlocked ?? []).map((r) => (
+              <li
+                key={r.id}
+                className="rounded-md border border-border bg-muted/50 p-3 text-sm"
+              >
+                <p className="font-medium">{r.reward_rule?.name ?? "Recompensa"}</p>
+                {r.reward_rule?.reward_text ? (
+                  <p className="text-muted-foreground">{r.reward_rule.reward_text}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          {shareMsg ? <p className="text-xs text-muted-foreground">{shareMsg}</p> : null}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => void handleShare()}
+            >
+              <Share2 /> Compartir
+            </Button>
+            <Button type="button" className="h-11" onClick={closeCelebration}>
+              Ver ficha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
+
 
 function labelCoat(c: Coat) {
   if (c === "con_pelo") return "Con pelo";

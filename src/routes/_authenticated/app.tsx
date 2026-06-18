@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { PawPrint, Users, Plus, Activity } from "lucide-react";
+import { PawPrint, Users, Plus, Activity, Gift, Users as UsersIcon } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { countOwners, countPets, listRecentVisits, type RecentVisit } from "@/lib/repository";
 import { useAuth } from "@/contexts/auth";
+
 
 export const Route = createFileRoute("/_authenticated/app")({
   component: HomePage,
@@ -63,6 +64,22 @@ function HomePage() {
             </Link>
           </Button>
         </section>
+
+        {profile?.role === "admin" ? (
+          <section className="grid grid-cols-2 gap-3">
+            <Button asChild variant="outline" className="h-12">
+              <Link to="/rewards">
+                <Gift /> Recompensas
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-12">
+              <Link to="/staff">
+                <UsersIcon /> Equipo
+              </Link>
+            </Button>
+          </section>
+        ) : null}
+
 
         <Card>
           <CardHeader>

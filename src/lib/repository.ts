@@ -249,3 +249,98 @@ function inferExt(mime: string): string {
   if (mime.includes("heic")) return "heic";
   return "jpg";
 }
+
+// ---------- REWARDS ----------
+
+export type RewardRule = Database["public"]["Tables"]["reward_rules"]["Row"];
+export type RewardRuleInsert = Database["public"]["Tables"]["reward_rules"]["Insert"];
+export type RewardRuleUpdate = Database["public"]["Tables"]["reward_rules"]["Update"];
+
+export type PetReward = Database["public"]["Tables"]["pet_rewards"]["Row"];
+export type PetRewardWithRule = PetReward & { reward_rule: RewardRule | null };
+
+export async function listRewardRules(): Promise<RewardRule[]> {
+  const { data, error } = await supabase
+    .from("reward_rules")
+    .select("*")
+    .order("threshold_visits", { ascending: true });
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function createRewardRule(input: RewardRuleInsert): Promise<RewardRule> {
+  const { data, error } = await supabase.from("reward_rules").insert(input).select().single();
+  if (error) throw error;
+  return data;
+}
+
+export async function updateRewardRule(
+  id: string,
+  input: RewardRuleUpdate,
+): Promise<RewardRule> {
+  const { data, error } = await supabase
+    .from("reward_rules")
+    .update(input)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function setRewardRuleActive(id: string, active: boolean): Promise<RewardRule> {
+  return updateRewardRule(id, { active });
+}
+
+export async function deleteRewardRule(id: string): Promise<void> {
+  const { error } = await supabase.from("reward_rules").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/** Lista las recompensas desbloqueadas para una mascota, con su regla, más recientes primero. */
+export async function listPetRewards(petId: string): Promise<PetRewardWithRule[]> {
+  const { data, error } = await supabase
+    .from("pet_rewards")
+    .select("*, reward_rule:reward_rules(*)")
+    .eq("pet_id", petId)
+    .order("unlocked_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as PetRewardWithRule[];
+}
+
+/** IDs de reward_rule ya desbloqueadas para una mascota (útil para diff antes/después). */
+export async function listPetRewardRuleIds(petId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("pet_rewards")
+    .select("reward_rule_id")
+    .eq("pet_id", petId);
+  if (error) throw error;
+  return (data ?? []).map((r) => r.reward_rule_id);
+}
+
+/**
+ * Devuelve la siguiente recompensa pendiente para una mascota: la reward_rule
+ * activa con menor threshold_visits estrictamente mayor que los puntos actuales.
+ * Devuelve null si no quedan recompensas por delante.
+ */
+export async function getNextPendingReward(
+  petId: string,
+  currentPoints: number,
+): Promise<RewardRule | null> {
+  // Excluir reglas ya desbloqueadas por esta mascota.
+  const unlockedIds = await listPetRewardRuleIds(petId);
+  let q = supabase
+    .from("reward_rules")
+    .select("*")
+    .eq("active", true)
+    .gt("threshold_visits", currentPoints)
+    .order("threshold_visits", { ascending: true })
+    .limit(1);
+  if (unlockedIds.length > 0) {
+    q = q.not("id", "in", `(${unlockedIds.join(",")})`);
+  }
+  const { data, error } = await q;
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
