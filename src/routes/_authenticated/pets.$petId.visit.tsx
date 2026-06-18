@@ -173,10 +173,7 @@ function NewVisitPage() {
     setSaving(true);
     setError(null);
     try {
-      // Snapshot de recompensas ya desbloqueadas antes de guardar la visita.
-      const beforeIds = new Set(await listPetRewardRuleIds(petId));
-
-      await createVisitWithSuggestions({
+      const result = await registerVisitWithRewards({
         pet_id: petId,
         staff_id: user?.id ?? null,
         photo_url: photoUrl,
@@ -193,16 +190,8 @@ function NewVisitPage() {
           };
         }),
       });
-
-      // Diff: el trigger ya habrá insertado las nuevas pet_rewards si tocaba.
-      const after = await listPetRewards(petId);
-      const newly = after.filter((r) => !beforeIds.has(r.reward_rule_id));
-      if (newly.length > 0) {
-        setUnlocked(newly);
-        setSaving(false);
-        return;
-      }
-      navigate({ to: "/pets/$petId", params: { petId } });
+      setCelebration(result);
+      setSaving(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo registrar la visita.");
       setSaving(false);
@@ -210,11 +199,10 @@ function NewVisitPage() {
   }
 
   async function handleShare() {
-    if (!unlocked || unlocked.length === 0 || !pet) return;
-    const names = unlocked
-      .map((r) => r.reward_rule?.reward_text ?? r.reward_rule?.name ?? "Recompensa")
-      .join(", ");
-    const text = `¡${pet.name} ha conseguido: ${names}! 🎉 #Kiwoko`;
+    if (!celebration || !pet) return;
+    const names = celebration.newlyUnlocked.map((r) => r.reward_text ?? r.name).join(", ");
+    const baseText = `¡${pet.name} ya tiene ${celebration.sellos} sellos en Kiwoko!`;
+    const text = names ? `${baseText} Recompensa: ${names} 🎉` : `${baseText} 🎉`;
     const chosenImg = chosen !== null ? images[chosen] : undefined;
     const imgUrl = chosenImg?.status === "ready" ? chosenImg.url : null;
 
@@ -231,7 +219,7 @@ function NewVisitPage() {
               typeof nav.canShare === "function" && nav.canShare({ files: [file] });
             if (canShareFiles) shareData.files = [file];
           } catch {
-            // sin imagen, sigue con texto.
+            // sin imagen, sigue solo con texto
           }
         }
         await nav.share(shareData);
@@ -250,10 +238,12 @@ function NewVisitPage() {
   }
 
   function closeCelebration() {
-    setUnlocked(null);
+    setCelebration(null);
     setShareMsg(null);
     navigate({ to: "/pets/$petId", params: { petId } });
   }
+
+
 
 
   if (pet === undefined) {
