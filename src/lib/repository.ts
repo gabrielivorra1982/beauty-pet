@@ -119,6 +119,32 @@ export async function updatePet(id: string, input: PetUpdate): Promise<Pet> {
 export async function deletePet(id: string): Promise<void> {
   const { error } = await supabase.from("pets").delete().eq("id", id);
   if (error) throw error;
+  // Limpieza best-effort de fotos huérfanas en Storage. Si falla, no impide el borrado.
+  await Promise.all([
+    deletePetPhotosUnderPrefix(`originals/${id}/`),
+    deletePetPhotosUnderPrefix(`cuts/${id}/`),
+  ]).catch(() => {});
+}
+
+/** Borra (best-effort) todos los objetos del bucket pet-photos bajo un prefijo. */
+async function deletePetPhotosUnderPrefix(prefix: string): Promise<void> {
+  try {
+    for (let i = 0; i < 100; i++) {
+      const { data, error } = await supabase.storage
+        .from(PET_PHOTOS_BUCKET)
+        .list(prefix, { limit: 1000, offset: 0 });
+      if (error || !data || data.length === 0) return;
+      const paths = data
+        .filter((o) => o.name && !o.name.endsWith("/"))
+        .map((o) => `${prefix}${o.name}`);
+      if (paths.length === 0) return;
+      const { error: rmErr } = await supabase.storage.from(PET_PHOTOS_BUCKET).remove(paths);
+      if (rmErr) return;
+      if (data.length < 1000) return;
+    }
+  } catch {
+    // ignore — best-effort
+  }
 }
 
 export async function countPets(): Promise<number> {
