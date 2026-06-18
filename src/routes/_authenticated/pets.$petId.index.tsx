@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles, Camera } from "lucide-react";
+import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles, Camera, Gift } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
 import { PetAvatar } from "@/components/pet-avatar";
 import {
   AlertDialog,
@@ -19,9 +20,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   deletePet,
+  getNextPendingReward,
   getPetWithOwner,
+  listPetRewards,
   listVisitsByPet,
+  type PetRewardWithRule,
   type PetWithOwner,
+  type RewardRule,
   type VisitWithChosen,
 } from "@/lib/repository";
 
@@ -34,22 +39,37 @@ function PetDetailPage() {
   const navigate = useNavigate();
   const [pet, setPet] = useState<PetWithOwner | null | undefined>(undefined);
   const [visits, setVisits] = useState<VisitWithChosen[] | null>(null);
+  const [rewards, setRewards] = useState<PetRewardWithRule[] | null>(null);
+  const [nextReward, setNextReward] = useState<RewardRule | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([getPetWithOwner(petId), listVisitsByPet(petId)])
-      .then(([p, v]) => {
+    (async () => {
+      try {
+        const [p, v, r] = await Promise.all([
+          getPetWithOwner(petId),
+          listVisitsByPet(petId),
+          listPetRewards(petId),
+        ]);
         if (cancelled) return;
         setPet(p);
         setVisits(v);
-      })
-      .catch(() => !cancelled && setError("No se pudo cargar la ficha."));
+        setRewards(r);
+        if (p) {
+          const next = await getNextPendingReward(petId, p.points);
+          if (!cancelled) setNextReward(next);
+        }
+      } catch {
+        if (!cancelled) setError("No se pudo cargar la ficha.");
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, [petId]);
+
 
   async function handleDelete() {
     setDeleting(true);
