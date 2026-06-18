@@ -16,14 +16,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import {
-  createVisitWithSuggestions,
   getPetWithOwner,
-  listPetRewardRuleIds,
-  listPetRewards,
+  registerVisitWithRewards,
   uploadPetPhoto,
-  type PetRewardWithRule,
   type PetWithOwner,
+  type RewardRule,
 } from "@/lib/repository";
+
 import { cn } from "@/lib/utils";
 
 
