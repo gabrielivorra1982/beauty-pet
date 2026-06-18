@@ -161,7 +161,7 @@ function PetDetailPage() {
               <ul className="divide-y divide-border">
                 {visits.map((v) => (
                   <li key={v.id} className="flex items-center gap-3 py-2">
-                    <div className="size-12 shrink-0 overflow-hidden rounded-md border border-border bg-background-muted">
+                    <div className="size-12 shrink-0 overflow-hidden rounded-md border border-border bg-muted">
                       {v.chosen_cut?.image_url ? (
                         <img
                           src={v.chosen_cut.image_url}
