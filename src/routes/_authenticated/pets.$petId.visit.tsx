@@ -342,7 +342,7 @@ function NewVisitPage() {
                               className="h-9"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                void generateImage(idx, s, analysis.breed, analysis.coat);
+                                void generateImage(idx, s, analysis.breed, analysis.coat, photoUrl);
                               }}
                             >
                               <RefreshCw /> Reintentar
