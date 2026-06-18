@@ -5,12 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  countOwners,
-  countPets,
-  listRecentVisits,
-  type RecentVisit,
-} from "@/lib/repository";
+import { countOwners, countPets, listRecentVisits, type RecentVisit } from "@/lib/repository";
 import { useAuth } from "@/contexts/auth";
 
 export const Route = createFileRoute("/_authenticated/app")({

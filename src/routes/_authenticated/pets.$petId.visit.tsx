@@ -86,10 +86,9 @@ function NewVisitPage() {
       const { signedUrl } = await uploadPetPhoto(petId, photoFile);
       setPhotoUrl(signedUrl);
 
-      const { data, error: fnErr } = await supabase.functions.invoke<AnalyzeResult>(
-        "analyze-pet",
-        { body: { image_url: signedUrl } },
-      );
+      const { data, error: fnErr } = await supabase.functions.invoke<AnalyzeResult>("analyze-pet", {
+        body: { image_url: signedUrl },
+      });
       if (fnErr || !data) {
         throw new Error(fnErr?.message ?? "No se pudo analizar la foto.");
       }

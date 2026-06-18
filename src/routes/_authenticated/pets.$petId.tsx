@@ -192,10 +192,12 @@ function PetDetailPage() {
           </Link>
         </Button>
 
-
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" className="h-11 w-full text-destructive hover:text-destructive">
+            <Button
+              variant="outline"
+              className="h-11 w-full text-destructive hover:text-destructive"
+            >
               <Trash2 /> Borrar mascota
             </Button>
           </AlertDialogTrigger>

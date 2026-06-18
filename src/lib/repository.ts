@@ -37,9 +37,7 @@ export async function getOwner(id: string): Promise<Owner | null> {
   return data;
 }
 
-export async function getOwnerWithPets(
-  id: string,
-): Promise<(Owner & { pets: Pet[] }) | null> {
+export async function getOwnerWithPets(id: string): Promise<(Owner & { pets: Pet[] }) | null> {
   const { data, error } = await supabase
     .from("owners")
     .select("*, pets(*)")
@@ -92,9 +90,7 @@ export async function listPetsWithOwner(search?: string): Promise<PetWithOwner[]
   if (!term) return rows;
   const t = term.toLowerCase();
   return rows.filter(
-    (p) =>
-      p.name.toLowerCase().includes(t) ||
-      (p.owner?.full_name ?? "").toLowerCase().includes(t),
+    (p) => p.name.toLowerCase().includes(t) || (p.owner?.full_name ?? "").toLowerCase().includes(t),
   );
 }
 
@@ -115,12 +111,7 @@ export async function createPet(input: PetInsert): Promise<Pet> {
 }
 
 export async function updatePet(id: string, input: PetUpdate): Promise<Pet> {
-  const { data, error } = await supabase
-    .from("pets")
-    .update(input)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("pets").update(input).eq("id", id).select().single();
   if (error) throw error;
   return data;
 }
@@ -131,9 +122,7 @@ export async function deletePet(id: string): Promise<void> {
 }
 
 export async function countPets(): Promise<number> {
-  const { count, error } = await supabase
-    .from("pets")
-    .select("*", { count: "exact", head: true });
+  const { count, error } = await supabase.from("pets").select("*", { count: "exact", head: true });
   if (error) throw error;
   return count ?? 0;
 }
@@ -260,4 +249,3 @@ function inferExt(mime: string): string {
   if (mime.includes("heic")) return "heic";
   return "jpg";
 }
-
