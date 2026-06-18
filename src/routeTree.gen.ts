@@ -21,6 +21,8 @@ import { Route as AuthenticatedPetsNewRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPetsPetIdRouteImport } from './routes/_authenticated/pets.$petId'
 import { Route as AuthenticatedOwnersNewRouteImport } from './routes/_authenticated/owners.new'
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
+import { Route as AuthenticatedPetsPetIdIndexRouteImport } from './routes/_authenticated/pets.$petId.index'
+import { Route as AuthenticatedOwnersOwnerIdIndexRouteImport } from './routes/_authenticated/owners.$ownerId.index'
 import { Route as AuthenticatedPetsPetIdVisitRouteImport } from './routes/_authenticated/pets.$petId.visit'
 import { Route as AuthenticatedPetsPetIdEditRouteImport } from './routes/_authenticated/pets.$petId.edit'
 import { Route as AuthenticatedOwnersOwnerIdEditRouteImport } from './routes/_authenticated/owners.$ownerId.edit'
@@ -86,6 +88,18 @@ const AuthenticatedOwnersOwnerIdRoute =
     path: '/owners/$ownerId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPetsPetIdIndexRoute =
+  AuthenticatedPetsPetIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedPetsPetIdRoute,
+  } as any)
+const AuthenticatedOwnersOwnerIdIndexRoute =
+  AuthenticatedOwnersOwnerIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedOwnersOwnerIdRoute,
+  } as any)
 const AuthenticatedPetsPetIdVisitRoute =
   AuthenticatedPetsPetIdVisitRouteImport.update({
     id: '/visit',
@@ -120,6 +134,8 @@ export interface FileRoutesByFullPath {
   '/owners/$ownerId/edit': typeof AuthenticatedOwnersOwnerIdEditRoute
   '/pets/$petId/edit': typeof AuthenticatedPetsPetIdEditRoute
   '/pets/$petId/visit': typeof AuthenticatedPetsPetIdVisitRoute
+  '/owners/$ownerId/': typeof AuthenticatedOwnersOwnerIdIndexRoute
+  '/pets/$petId/': typeof AuthenticatedPetsPetIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,15 +143,15 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/app': typeof AuthenticatedAppRoute
   '/staff': typeof AuthenticatedStaffRoute
-  '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRouteWithChildren
   '/owners/new': typeof AuthenticatedOwnersNewRoute
-  '/pets/$petId': typeof AuthenticatedPetsPetIdRouteWithChildren
   '/pets/new': typeof AuthenticatedPetsNewRoute
   '/owners': typeof AuthenticatedOwnersIndexRoute
   '/pets': typeof AuthenticatedPetsIndexRoute
   '/owners/$ownerId/edit': typeof AuthenticatedOwnersOwnerIdEditRoute
   '/pets/$petId/edit': typeof AuthenticatedPetsPetIdEditRoute
   '/pets/$petId/visit': typeof AuthenticatedPetsPetIdVisitRoute
+  '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdIndexRoute
+  '/pets/$petId': typeof AuthenticatedPetsPetIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -154,6 +170,8 @@ export interface FileRoutesById {
   '/_authenticated/owners/$ownerId/edit': typeof AuthenticatedOwnersOwnerIdEditRoute
   '/_authenticated/pets/$petId/edit': typeof AuthenticatedPetsPetIdEditRoute
   '/_authenticated/pets/$petId/visit': typeof AuthenticatedPetsPetIdVisitRoute
+  '/_authenticated/owners/$ownerId/': typeof AuthenticatedOwnersOwnerIdIndexRoute
+  '/_authenticated/pets/$petId/': typeof AuthenticatedPetsPetIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -172,6 +190,8 @@ export interface FileRouteTypes {
     | '/owners/$ownerId/edit'
     | '/pets/$petId/edit'
     | '/pets/$petId/visit'
+    | '/owners/$ownerId/'
+    | '/pets/$petId/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -179,15 +199,15 @@ export interface FileRouteTypes {
     | '/login'
     | '/app'
     | '/staff'
-    | '/owners/$ownerId'
     | '/owners/new'
-    | '/pets/$petId'
     | '/pets/new'
     | '/owners'
     | '/pets'
     | '/owners/$ownerId/edit'
     | '/pets/$petId/edit'
     | '/pets/$petId/visit'
+    | '/owners/$ownerId'
+    | '/pets/$petId'
   id:
     | '__root__'
     | '/'
@@ -205,6 +225,8 @@ export interface FileRouteTypes {
     | '/_authenticated/owners/$ownerId/edit'
     | '/_authenticated/pets/$petId/edit'
     | '/_authenticated/pets/$petId/visit'
+    | '/_authenticated/owners/$ownerId/'
+    | '/_authenticated/pets/$petId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -300,6 +322,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnersOwnerIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pets/$petId/': {
+      id: '/_authenticated/pets/$petId/'
+      path: '/'
+      fullPath: '/pets/$petId/'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdIndexRouteImport
+      parentRoute: typeof AuthenticatedPetsPetIdRoute
+    }
+    '/_authenticated/owners/$ownerId/': {
+      id: '/_authenticated/owners/$ownerId/'
+      path: '/'
+      fullPath: '/owners/$ownerId/'
+      preLoaderRoute: typeof AuthenticatedOwnersOwnerIdIndexRouteImport
+      parentRoute: typeof AuthenticatedOwnersOwnerIdRoute
+    }
     '/_authenticated/pets/$petId/visit': {
       id: '/_authenticated/pets/$petId/visit'
       path: '/visit'
@@ -326,11 +362,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedOwnersOwnerIdRouteChildren {
   AuthenticatedOwnersOwnerIdEditRoute: typeof AuthenticatedOwnersOwnerIdEditRoute
+  AuthenticatedOwnersOwnerIdIndexRoute: typeof AuthenticatedOwnersOwnerIdIndexRoute
 }
 
 const AuthenticatedOwnersOwnerIdRouteChildren: AuthenticatedOwnersOwnerIdRouteChildren =
   {
     AuthenticatedOwnersOwnerIdEditRoute: AuthenticatedOwnersOwnerIdEditRoute,
+    AuthenticatedOwnersOwnerIdIndexRoute: AuthenticatedOwnersOwnerIdIndexRoute,
   }
 
 const AuthenticatedOwnersOwnerIdRouteWithChildren =
@@ -341,12 +379,14 @@ const AuthenticatedOwnersOwnerIdRouteWithChildren =
 interface AuthenticatedPetsPetIdRouteChildren {
   AuthenticatedPetsPetIdEditRoute: typeof AuthenticatedPetsPetIdEditRoute
   AuthenticatedPetsPetIdVisitRoute: typeof AuthenticatedPetsPetIdVisitRoute
+  AuthenticatedPetsPetIdIndexRoute: typeof AuthenticatedPetsPetIdIndexRoute
 }
 
 const AuthenticatedPetsPetIdRouteChildren: AuthenticatedPetsPetIdRouteChildren =
   {
     AuthenticatedPetsPetIdEditRoute: AuthenticatedPetsPetIdEditRoute,
     AuthenticatedPetsPetIdVisitRoute: AuthenticatedPetsPetIdVisitRoute,
+    AuthenticatedPetsPetIdIndexRoute: AuthenticatedPetsPetIdIndexRoute,
   }
 
 const AuthenticatedPetsPetIdRouteWithChildren =

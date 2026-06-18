@@ -203,7 +203,7 @@ function NewVisitPage() {
         <Card>
           <CardContent className="space-y-3 p-4">
             {photoPreview ? (
-              <div className="overflow-hidden rounded-md border border-border bg-background-muted">
+              <div className="overflow-hidden rounded-md border border-border bg-muted">
                 <img
                   src={photoPreview}
                   alt="Foto de la mascota"
@@ -211,7 +211,7 @@ function NewVisitPage() {
                 />
               </div>
             ) : (
-              <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-border bg-background-muted text-sm text-muted-foreground">
+              <div className="flex aspect-square w-full items-center justify-center rounded-md border border-dashed border-border bg-muted text-sm text-muted-foreground">
                 Sin foto todavía
               </div>
             )}
@@ -284,10 +284,10 @@ function NewVisitPage() {
           <section className="space-y-2">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">Reconocido</p>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-md border border-border bg-background-muted px-2 py-1 text-sm">
+              <span className="rounded-md border border-border bg-muted px-2 py-1 text-sm">
                 {analysis.breed}
               </span>
-              <span className="rounded-md border border-border bg-background-muted px-2 py-1 text-sm">
+              <span className="rounded-md border border-border bg-muted px-2 py-1 text-sm">
                 {labelCoat(analysis.coat)}
               </span>
             </div>
@@ -313,10 +313,10 @@ function NewVisitPage() {
                         "block w-full overflow-hidden rounded-lg border bg-background text-left transition-colors",
                         isChosen
                           ? "border-foreground ring-2 ring-foreground/10"
-                          : "border-border hover:border-border-strong",
+                          : "border-border hover:border-border",
                       )}
                     >
-                      <div className="relative aspect-square w-full bg-background-muted">
+                      <div className="relative aspect-square w-full bg-muted">
                         {img?.status === "ready" ? (
                           <img
                             src={img.url}
