@@ -100,7 +100,8 @@ function NewVisitPage() {
     setAnalyzing(true);
     setError(null);
     try {
-      const { signedUrl } = await uploadPetPhoto(petId, photoFile);
+      const compressed = await compressImage(photoFile as File);
+      const { signedUrl } = await uploadPetPhoto(petId, compressed);
       setPhotoUrl(signedUrl);
 
       const { data, error: fnErr } = await supabase.functions.invoke<AnalyzeResult>("analyze-pet", {
