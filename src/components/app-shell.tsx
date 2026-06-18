@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "@/contexts/auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import logoAsset from "@/assets/logo_kiwoko.svg.asset.json";
 
 interface AppShellProps {
   title: string;
@@ -31,18 +32,22 @@ export function AppShell({ title, children, action, back }: AppShellProps) {
         className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
-        <div className="mx-auto flex h-14 w-full max-w-2xl items-center gap-3 px-4">
-          {back ? (
-            <Button asChild variant="ghost" size="sm" className="h-9 -ml-2">
-              <Link to={back.to}>{back.label ?? "Volver"}</Link>
-            </Button>
-          ) : (
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-              Kiwoko
-            </span>
-          )}
-          <h1 className="ml-auto text-base font-semibold tracking-tight">{title}</h1>
-          <div className="ml-auto flex items-center gap-1">
+        <div className="relative mx-auto flex h-14 w-full max-w-2xl items-center px-4">
+          <div className="flex flex-1 items-center">
+            {back ? (
+              <Button asChild variant="ghost" size="sm" className="h-9 -ml-2">
+                <Link to={back.to}>{back.label ?? "Volver"}</Link>
+              </Button>
+            ) : null}
+          </div>
+
+          <img
+            src={logoAsset.url}
+            alt="Kiwoko"
+            className="pointer-events-none absolute left-1/2 top-1/2 h-6 -translate-x-1/2 -translate-y-1/2"
+          />
+
+          <div className="flex flex-1 items-center justify-end gap-1">
             {action}
             {profile?.role === "admin" ? (
               <Button asChild variant="ghost" size="icon" className="h-10 w-10" title="Equipo">
@@ -62,6 +67,7 @@ export function AppShell({ title, children, action, back }: AppShellProps) {
             </Button>
           </div>
         </div>
+        <span className="sr-only">{title}</span>
       </header>
 
       <main
