@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { PawPrint, Users, Plus, Activity, Gift, Users as UsersIcon } from "lucide-react";
+import { PawPrint, Users, Plus, Activity, Gift, Users as UsersIcon, HelpCircle } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { countOwners, countPets, listRecentVisits, type RecentVisit } from "@/lib/repository";
 import { useAuth } from "@/contexts/auth";
 
