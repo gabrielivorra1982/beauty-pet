@@ -21,6 +21,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -35,6 +36,21 @@ function LoginPage() {
       else setError("No se pudo iniciar sesión. Inténtalo de nuevo.");
       return;
     }
+    navigate({ to: "/app" });
+  }
+
+  async function handleGoogle() {
+    setError(null);
+    setGoogleLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result.error) {
+      setGoogleLoading(false);
+      setError("No se pudo iniciar sesión con Google. Inténtalo de nuevo.");
+      return;
+    }
+    if (result.redirected) return;
     navigate({ to: "/app" });
   }
 
