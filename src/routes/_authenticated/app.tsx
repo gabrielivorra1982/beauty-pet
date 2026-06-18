@@ -85,6 +85,10 @@ function HomePage() {
           </section>
         ) : null}
 
+        <HelpCard />
+
+
+
 
         <Card>
           <CardHeader>
