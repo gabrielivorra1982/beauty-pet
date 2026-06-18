@@ -344,3 +344,61 @@ export async function getNextPendingReward(
   return data?.[0] ?? null;
 }
 
+/** Regla activa + progreso del perro (sellos / threshold y si ya está conseguida). */
+export type RewardProgress = {
+  rule: RewardRule;
+  current: number;
+  unlocked: boolean;
+};
+
+export async function listActiveRewardRulesWithProgress(
+  petId: string,
+  currentPoints: number,
+): Promise<RewardProgress[]> {
+  const [rules, unlockedIds] = await Promise.all([
+    listRewardRules(),
+    listPetRewardRuleIds(petId),
+  ]);
+  const set = new Set(unlockedIds);
+  return rules
+    .filter((r) => r.active)
+    .map((r) => ({ rule: r, current: currentPoints, unlocked: set.has(r.id) }));
+}
+
+/**
+ * Registra una visita completa con sus 4 sugerencias y devuelve el estado
+ * de fidelización tras el trigger: el total de sellos del perro y las
+ * recompensas recién desbloqueadas (diff antes/después).
+ */
+export async function registerVisitWithRewards(input: {
+  pet_id: string;
+  staff_id: string | null;
+  photo_url: string | null;
+  recognized_breed: string | null;
+  recognized_coat: string | null;
+  suggestions: Array<{
+    position: number;
+    title: string;
+    description: string | null;
+    image_url: string | null;
+    is_chosen: boolean;
+  }>;
+}): Promise<{ sellos: number; newlyUnlocked: RewardRule[] }> {
+  const beforeIds = new Set(await listPetRewardRuleIds(input.pet_id));
+
+  await createVisitWithSuggestions(input);
+
+  const [{ data: petRow, error: petErr }, after] = await Promise.all([
+    supabase.from("pets").select("points").eq("id", input.pet_id).single(),
+    listPetRewards(input.pet_id),
+  ]);
+  if (petErr) throw petErr;
+
+  const newlyUnlocked = after
+    .filter((r) => !beforeIds.has(r.reward_rule_id) && r.reward_rule)
+    .map((r) => r.reward_rule!) as RewardRule[];
+
+  return { sellos: petRow?.points ?? 0, newlyUnlocked };
+}
+
+
