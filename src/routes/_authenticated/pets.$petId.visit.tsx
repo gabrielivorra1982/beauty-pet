@@ -22,6 +22,7 @@ import {
   type PetWithOwner,
   type RewardRule,
 } from "@/lib/repository";
+import { compressImage } from "@/lib/image";
 
 import { cn } from "@/lib/utils";
 
@@ -99,7 +100,8 @@ function NewVisitPage() {
     setAnalyzing(true);
     setError(null);
     try {
-      const { signedUrl } = await uploadPetPhoto(petId, photoFile);
+      const compressed = await compressImage(photoFile as File);
+      const { signedUrl } = await uploadPetPhoto(petId, compressed);
       setPhotoUrl(signedUrl);
 
       const { data, error: fnErr } = await supabase.functions.invoke<AnalyzeResult>("analyze-pet", {
@@ -442,7 +444,10 @@ function NewVisitPage() {
 
         {/* 4. CONFIRMAR */}
         {analysis ? (
-          <div className="sticky bottom-20 z-10 -mx-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur">
+          <div
+            className="sticky bottom-20 z-10 -mx-4 border-t border-border bg-background/95 px-4 py-3 backdrop-blur"
+            style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
+          >
             <div className="flex gap-2">
               <Button asChild variant="outline" className="h-12 flex-1">
                 <Link to="/pets/$petId" params={{ petId }}>
