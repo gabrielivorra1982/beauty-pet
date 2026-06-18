@@ -16,14 +16,13 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import {
-  createVisitWithSuggestions,
   getPetWithOwner,
-  listPetRewardRuleIds,
-  listPetRewards,
+  registerVisitWithRewards,
   uploadPetPhoto,
-  type PetRewardWithRule,
   type PetWithOwner,
+  type RewardRule,
 } from "@/lib/repository";
+
 import { cn } from "@/lib/utils";
 
 
@@ -56,7 +55,10 @@ function NewVisitPage() {
   const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [unlocked, setUnlocked] = useState<PetRewardWithRule[] | null>(null);
+  const [celebration, setCelebration] = useState<
+    | { sellos: number; newlyUnlocked: RewardRule[] }
+    | null
+  >(null);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -171,10 +173,7 @@ function NewVisitPage() {
     setSaving(true);
     setError(null);
     try {
-      // Snapshot de recompensas ya desbloqueadas antes de guardar la visita.
-      const beforeIds = new Set(await listPetRewardRuleIds(petId));
-
-      await createVisitWithSuggestions({
+      const result = await registerVisitWithRewards({
         pet_id: petId,
         staff_id: user?.id ?? null,
         photo_url: photoUrl,
@@ -191,16 +190,8 @@ function NewVisitPage() {
           };
         }),
       });
-
-      // Diff: el trigger ya habrá insertado las nuevas pet_rewards si tocaba.
-      const after = await listPetRewards(petId);
-      const newly = after.filter((r) => !beforeIds.has(r.reward_rule_id));
-      if (newly.length > 0) {
-        setUnlocked(newly);
-        setSaving(false);
-        return;
-      }
-      navigate({ to: "/pets/$petId", params: { petId } });
+      setCelebration(result);
+      setSaving(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo registrar la visita.");
       setSaving(false);
@@ -208,11 +199,10 @@ function NewVisitPage() {
   }
 
   async function handleShare() {
-    if (!unlocked || unlocked.length === 0 || !pet) return;
-    const names = unlocked
-      .map((r) => r.reward_rule?.reward_text ?? r.reward_rule?.name ?? "Recompensa")
-      .join(", ");
-    const text = `¡${pet.name} ha conseguido: ${names}! 🎉 #Kiwoko`;
+    if (!celebration || !pet) return;
+    const names = celebration.newlyUnlocked.map((r) => r.reward_text ?? r.name).join(", ");
+    const baseText = `¡${pet.name} ya tiene ${celebration.sellos} sellos en Kiwoko!`;
+    const text = names ? `${baseText} Recompensa: ${names} 🎉` : `${baseText} 🎉`;
     const chosenImg = chosen !== null ? images[chosen] : undefined;
     const imgUrl = chosenImg?.status === "ready" ? chosenImg.url : null;
 
@@ -229,7 +219,7 @@ function NewVisitPage() {
               typeof nav.canShare === "function" && nav.canShare({ files: [file] });
             if (canShareFiles) shareData.files = [file];
           } catch {
-            // sin imagen, sigue con texto.
+            // sin imagen, sigue solo con texto
           }
         }
         await nav.share(shareData);
@@ -248,10 +238,12 @@ function NewVisitPage() {
   }
 
   function closeCelebration() {
-    setUnlocked(null);
+    setCelebration(null);
     setShareMsg(null);
     navigate({ to: "/pets/$petId", params: { petId } });
   }
+
+
 
 
   if (pet === undefined) {
@@ -477,7 +469,7 @@ function NewVisitPage() {
       </div>
 
       <Dialog
-        open={unlocked !== null && unlocked.length > 0}
+        open={celebration !== null}
         onOpenChange={(o) => {
           if (!o) closeCelebration();
         }}
@@ -485,29 +477,37 @@ function NewVisitPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Gift className="size-5" /> ¡Recompensa desbloqueada!
+              <Gift className="size-5" /> ¡Sello conseguido!
             </DialogTitle>
             <DialogDescription>
-              {pet
-                ? `${pet.name} acaba de conseguir ${
-                    unlocked && unlocked.length > 1 ? "nuevas recompensas" : "una nueva recompensa"
+              {pet && celebration
+                ? `${pet.name} ya tiene ${celebration.sellos} ${
+                    celebration.sellos === 1 ? "sello" : "sellos"
                   }.`
                 : null}
             </DialogDescription>
           </DialogHeader>
-          <ul className="space-y-2">
-            {(unlocked ?? []).map((r) => (
-              <li
-                key={r.id}
-                className="rounded-md border border-border bg-muted/50 p-3 text-sm"
-              >
-                <p className="font-medium">{r.reward_rule?.name ?? "Recompensa"}</p>
-                {r.reward_rule?.reward_text ? (
-                  <p className="text-muted-foreground">{r.reward_rule.reward_text}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
+          {celebration && celebration.newlyUnlocked.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Recompensa desbloqueada
+              </p>
+              <ul className="space-y-2">
+                {celebration.newlyUnlocked.map((r) => (
+                  <li
+                    key={r.id}
+                    className="rounded-md border border-border bg-muted/50 p-3 text-sm"
+                  >
+                    <p className="font-medium">{r.reward_text ?? r.name}</p>
+                    {r.reward_text && r.name !== r.reward_text ? (
+                      <p className="text-xs text-muted-foreground">{r.name}</p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {shareMsg ? <p className="text-xs text-muted-foreground">{shareMsg}</p> : null}
           <DialogFooter className="gap-2 sm:gap-2">
             <Button
