@@ -475,9 +475,59 @@ function NewVisitPage() {
           </div>
         ) : null}
       </div>
+
+      <Dialog
+        open={unlocked !== null && unlocked.length > 0}
+        onOpenChange={(o) => {
+          if (!o) closeCelebration();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Gift className="size-5" /> ¡Recompensa desbloqueada!
+            </DialogTitle>
+            <DialogDescription>
+              {pet
+                ? `${pet.name} acaba de conseguir ${
+                    unlocked && unlocked.length > 1 ? "nuevas recompensas" : "una nueva recompensa"
+                  }.`
+                : null}
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="space-y-2">
+            {(unlocked ?? []).map((r) => (
+              <li
+                key={r.id}
+                className="rounded-md border border-border bg-muted/50 p-3 text-sm"
+              >
+                <p className="font-medium">{r.reward_rule?.name ?? "Recompensa"}</p>
+                {r.reward_rule?.reward_text ? (
+                  <p className="text-muted-foreground">{r.reward_rule.reward_text}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          {shareMsg ? <p className="text-xs text-muted-foreground">{shareMsg}</p> : null}
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11"
+              onClick={() => void handleShare()}
+            >
+              <Share2 /> Compartir
+            </Button>
+            <Button type="button" className="h-11" onClick={closeCelebration}>
+              Ver ficha
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }
+
 
 function labelCoat(c: Coat) {
   if (c === "con_pelo") return "Con pelo";
