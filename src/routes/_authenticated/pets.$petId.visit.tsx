@@ -204,7 +204,6 @@ function NewVisitPage() {
           <CardContent className="space-y-3 p-4">
             {photoPreview ? (
               <div className="overflow-hidden rounded-md border border-border bg-background-muted">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={photoPreview}
                   alt="Foto de la mascota"
@@ -319,7 +318,6 @@ function NewVisitPage() {
                     >
                       <div className="relative aspect-square w-full bg-background-muted">
                         {img?.status === "ready" ? (
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img
                             src={img.url}
                             alt={s.title}
