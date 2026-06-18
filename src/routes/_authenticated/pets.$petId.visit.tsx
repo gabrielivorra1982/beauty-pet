@@ -171,6 +171,9 @@ function NewVisitPage() {
     setSaving(true);
     setError(null);
     try {
+      // Snapshot de recompensas ya desbloqueadas antes de guardar la visita.
+      const beforeIds = new Set(await listPetRewardRuleIds(petId));
+
       await createVisitWithSuggestions({
         pet_id: petId,
         staff_id: user?.id ?? null,
@@ -188,12 +191,68 @@ function NewVisitPage() {
           };
         }),
       });
+
+      // Diff: el trigger ya habrá insertado las nuevas pet_rewards si tocaba.
+      const after = await listPetRewards(petId);
+      const newly = after.filter((r) => !beforeIds.has(r.reward_rule_id));
+      if (newly.length > 0) {
+        setUnlocked(newly);
+        setSaving(false);
+        return;
+      }
       navigate({ to: "/pets/$petId", params: { petId } });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo registrar la visita.");
       setSaving(false);
     }
   }
+
+  async function handleShare() {
+    if (!unlocked || unlocked.length === 0 || !pet) return;
+    const names = unlocked
+      .map((r) => r.reward_rule?.reward_text ?? r.reward_rule?.name ?? "Recompensa")
+      .join(", ");
+    const text = `¡${pet.name} ha conseguido: ${names}! 🎉 #Kiwoko`;
+    const chosenImg = chosen !== null ? images[chosen] : undefined;
+    const imgUrl = chosenImg?.status === "ready" ? chosenImg.url : null;
+
+    try {
+      const nav = typeof navigator !== "undefined" ? navigator : null;
+      if (nav?.share) {
+        const shareData: ShareData = { title: "Kiwoko", text };
+        if (imgUrl) {
+          try {
+            const resp = await fetch(imgUrl);
+            const blob = await resp.blob();
+            const file = new File([blob], "corte.jpg", { type: blob.type || "image/jpeg" });
+            const canShareFiles =
+              typeof nav.canShare === "function" && nav.canShare({ files: [file] });
+            if (canShareFiles) shareData.files = [file];
+          } catch {
+            // sin imagen, sigue con texto.
+          }
+        }
+        await nav.share(shareData);
+        setShareMsg("Compartido.");
+        return;
+      }
+      if (nav?.clipboard) {
+        await nav.clipboard.writeText(text);
+        setShareMsg("Copiado al portapapeles.");
+        return;
+      }
+      setShareMsg("Compartir no está disponible en este dispositivo.");
+    } catch {
+      setShareMsg("No se pudo compartir.");
+    }
+  }
+
+  function closeCelebration() {
+    setUnlocked(null);
+    setShareMsg(null);
+    navigate({ to: "/pets/$petId", params: { petId } });
+  }
+
 
   if (pet === undefined) {
     return (
