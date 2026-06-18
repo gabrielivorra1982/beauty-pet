@@ -33,7 +33,7 @@ function PetDetailPage() {
   const { petId } = Route.useParams();
   const navigate = useNavigate();
   const [pet, setPet] = useState<PetWithOwner | null | undefined>(undefined);
-  const [visits, setVisits] = useState<Visit[] | null>(null);
+  const [visits, setVisits] = useState<VisitWithChosen[] | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
