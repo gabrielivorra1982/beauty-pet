@@ -55,7 +55,10 @@ function NewVisitPage() {
   const [chosen, setChosen] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [unlocked, setUnlocked] = useState<PetRewardWithRule[] | null>(null);
+  const [celebration, setCelebration] = useState<
+    | { sellos: number; newlyUnlocked: RewardRule[] }
+    | null
+  >(null);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
