@@ -1,19 +1,31 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle } from "lucide-react";
+import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle, Gift, Share2 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/auth";
 import {
   createVisitWithSuggestions,
   getPetWithOwner,
+  listPetRewardRuleIds,
+  listPetRewards,
   uploadPetPhoto,
+  type PetRewardWithRule,
   type PetWithOwner,
 } from "@/lib/repository";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/pets/$petId/visit")({
   component: NewVisitPage,
