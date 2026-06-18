@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles } from "lucide-react";
+import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles, Camera } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

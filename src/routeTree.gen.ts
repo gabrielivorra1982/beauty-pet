@@ -21,6 +21,7 @@ import { Route as AuthenticatedPetsNewRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedPetsPetIdRouteImport } from './routes/_authenticated/pets.$petId'
 import { Route as AuthenticatedOwnersNewRouteImport } from './routes/_authenticated/owners.new'
 import { Route as AuthenticatedOwnersOwnerIdRouteImport } from './routes/_authenticated/owners.$ownerId'
+import { Route as AuthenticatedPetsPetIdVisitRouteImport } from './routes/_authenticated/pets.$petId.visit'
 import { Route as AuthenticatedPetsPetIdEditRouteImport } from './routes/_authenticated/pets.$petId.edit'
 import { Route as AuthenticatedOwnersOwnerIdEditRouteImport } from './routes/_authenticated/owners.$ownerId.edit'
 
@@ -85,6 +86,12 @@ const AuthenticatedOwnersOwnerIdRoute =
     path: '/owners/$ownerId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPetsPetIdVisitRoute =
+  AuthenticatedPetsPetIdVisitRouteImport.update({
+    id: '/visit',
+    path: '/visit',
+    getParentRoute: () => AuthenticatedPetsPetIdRoute,
+  } as any)
 const AuthenticatedPetsPetIdEditRoute =
   AuthenticatedPetsPetIdEditRouteImport.update({
     id: '/edit',
@@ -112,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/pets/': typeof AuthenticatedPetsIndexRoute
   '/owners/$ownerId/edit': typeof AuthenticatedOwnersOwnerIdEditRoute
   '/pets/$petId/edit': typeof AuthenticatedPetsPetIdEditRoute
+  '/pets/$petId/visit': typeof AuthenticatedPetsPetIdVisitRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,6 +135,7 @@ export interface FileRoutesByTo {
   '/pets': typeof AuthenticatedPetsIndexRoute
   '/owners/$ownerId/edit': typeof AuthenticatedOwnersOwnerIdEditRoute
   '/pets/$petId/edit': typeof AuthenticatedPetsPetIdEditRoute
+  '/pets/$petId/visit': typeof AuthenticatedPetsPetIdVisitRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -144,6 +153,7 @@ export interface FileRoutesById {
   '/_authenticated/pets/': typeof AuthenticatedPetsIndexRoute
   '/_authenticated/owners/$ownerId/edit': typeof AuthenticatedOwnersOwnerIdEditRoute
   '/_authenticated/pets/$petId/edit': typeof AuthenticatedPetsPetIdEditRoute
+  '/_authenticated/pets/$petId/visit': typeof AuthenticatedPetsPetIdVisitRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/pets/'
     | '/owners/$ownerId/edit'
     | '/pets/$petId/edit'
+    | '/pets/$petId/visit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/pets'
     | '/owners/$ownerId/edit'
     | '/pets/$petId/edit'
+    | '/pets/$petId/visit'
   id:
     | '__root__'
     | '/'
@@ -192,6 +204,7 @@ export interface FileRouteTypes {
     | '/_authenticated/pets/'
     | '/_authenticated/owners/$ownerId/edit'
     | '/_authenticated/pets/$petId/edit'
+    | '/_authenticated/pets/$petId/visit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -287,6 +300,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedOwnersOwnerIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/pets/$petId/visit': {
+      id: '/_authenticated/pets/$petId/visit'
+      path: '/visit'
+      fullPath: '/pets/$petId/visit'
+      preLoaderRoute: typeof AuthenticatedPetsPetIdVisitRouteImport
+      parentRoute: typeof AuthenticatedPetsPetIdRoute
+    }
     '/_authenticated/pets/$petId/edit': {
       id: '/_authenticated/pets/$petId/edit'
       path: '/edit'
@@ -320,11 +340,13 @@ const AuthenticatedOwnersOwnerIdRouteWithChildren =
 
 interface AuthenticatedPetsPetIdRouteChildren {
   AuthenticatedPetsPetIdEditRoute: typeof AuthenticatedPetsPetIdEditRoute
+  AuthenticatedPetsPetIdVisitRoute: typeof AuthenticatedPetsPetIdVisitRoute
 }
 
 const AuthenticatedPetsPetIdRouteChildren: AuthenticatedPetsPetIdRouteChildren =
   {
     AuthenticatedPetsPetIdEditRoute: AuthenticatedPetsPetIdEditRoute,
+    AuthenticatedPetsPetIdVisitRoute: AuthenticatedPetsPetIdVisitRoute,
   }
 
 const AuthenticatedPetsPetIdRouteWithChildren =
