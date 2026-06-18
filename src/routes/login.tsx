@@ -105,6 +105,28 @@ function LoginPage() {
             {submitting ? "Entrando…" : "Entrar"}
           </Button>
 
+          <div className="relative py-2">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-background px-2 text-xs text-muted-foreground">o</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleGoogle}
+            disabled={googleLoading || submitting}
+            className="h-11 w-full gap-2"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4">
+              <path fill="#EA4335" d="M12 10.2v3.96h5.51c-.24 1.42-1.69 4.17-5.51 4.17-3.31 0-6.02-2.75-6.02-6.13S8.69 6.07 12 6.07c1.89 0 3.15.81 3.87 1.5l2.64-2.54C16.83 3.5 14.62 2.5 12 2.5 6.76 2.5 2.5 6.76 2.5 12S6.76 21.5 12 21.5c6.93 0 9.5-4.87 9.5-7.4 0-.5-.06-.88-.13-1.27H12z" />
+            </svg>
+            {googleLoading ? "Conectando con Google…" : "Continuar con Google"}
+          </Button>
+
           <p className="text-center text-xs text-muted-foreground">
             ¿No tienes cuenta? Pídele a un administrador que te dé acceso.
           </p>
