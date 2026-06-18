@@ -37,9 +37,7 @@ export async function getOwner(id: string): Promise<Owner | null> {
   return data;
 }
 
-export async function getOwnerWithPets(
-  id: string,
-): Promise<(Owner & { pets: Pet[] }) | null> {
+export async function getOwnerWithPets(id: string): Promise<(Owner & { pets: Pet[] }) | null> {
   const { data, error } = await supabase
     .from("owners")
     .select("*, pets(*)")
@@ -92,9 +90,7 @@ export async function listPetsWithOwner(search?: string): Promise<PetWithOwner[]
   if (!term) return rows;
   const t = term.toLowerCase();
   return rows.filter(
-    (p) =>
-      p.name.toLowerCase().includes(t) ||
-      (p.owner?.full_name ?? "").toLowerCase().includes(t),
+    (p) => p.name.toLowerCase().includes(t) || (p.owner?.full_name ?? "").toLowerCase().includes(t),
   );
 }
 
@@ -115,12 +111,7 @@ export async function createPet(input: PetInsert): Promise<Pet> {
 }
 
 export async function updatePet(id: string, input: PetUpdate): Promise<Pet> {
-  const { data, error } = await supabase
-    .from("pets")
-    .update(input)
-    .eq("id", id)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("pets").update(input).eq("id", id).select().single();
   if (error) throw error;
   return data;
 }
@@ -131,21 +122,130 @@ export async function deletePet(id: string): Promise<void> {
 }
 
 export async function countPets(): Promise<number> {
-  const { count, error } = await supabase
-    .from("pets")
-    .select("*", { count: "exact", head: true });
+  const { count, error } = await supabase.from("pets").select("*", { count: "exact", head: true });
   if (error) throw error;
   return count ?? 0;
 }
 
 // ---------- VISITS ----------
 
-export async function listVisitsByPet(petId: string): Promise<Visit[]> {
+export type CutSuggestion = Database["public"]["Tables"]["cut_suggestions"]["Row"];
+export type CutSuggestionInsert = Database["public"]["Tables"]["cut_suggestions"]["Insert"];
+export type VisitInsert = Database["public"]["Tables"]["visits"]["Insert"];
+
+export type VisitWithChosen = Visit & {
+  chosen_cut: Pick<CutSuggestion, "id" | "title" | "image_url"> | null;
+};
+
+export type RecentVisit = Visit & {
+  pet: Pick<Pet, "id" | "name"> | null;
+  chosen_cut: Pick<CutSuggestion, "id" | "title" | "image_url"> | null;
+};
+
+export async function listVisitsByPet(petId: string): Promise<VisitWithChosen[]> {
   const { data, error } = await supabase
     .from("visits")
-    .select("*")
+    .select("*, chosen_cut:cut_suggestions!visits_chosen_cut_id_fkey(id, title, image_url)")
     .eq("pet_id", petId)
     .order("visited_at", { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  return (data ?? []) as VisitWithChosen[];
+}
+
+export async function listRecentVisits(limit = 5): Promise<RecentVisit[]> {
+  const { data, error } = await supabase
+    .from("visits")
+    .select(
+      "*, pet:pets(id, name), chosen_cut:cut_suggestions!visits_chosen_cut_id_fkey(id, title, image_url)",
+    )
+    .order("visited_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []) as RecentVisit[];
+}
+
+/**
+ * Crea una visita completa con sus 4 sugerencias y marca la elegida.
+ * No toca puntos ni recompensas (Fase 5).
+ */
+export async function createVisitWithSuggestions(input: {
+  pet_id: string;
+  staff_id: string | null;
+  photo_url: string | null;
+  recognized_breed: string | null;
+  recognized_coat: string | null;
+  suggestions: Array<{
+    position: number;
+    title: string;
+    description: string | null;
+    image_url: string | null;
+    is_chosen: boolean;
+  }>;
+}): Promise<Visit> {
+  const { data: visit, error: visitErr } = await supabase
+    .from("visits")
+    .insert({
+      pet_id: input.pet_id,
+      staff_id: input.staff_id,
+      photo_url: input.photo_url,
+      recognized_breed: input.recognized_breed,
+      recognized_coat: input.recognized_coat,
+      points_awarded: 0,
+    } satisfies VisitInsert)
+    .select()
+    .single();
+  if (visitErr || !visit) throw visitErr ?? new Error("No se pudo crear la visita.");
+
+  const rows: CutSuggestionInsert[] = input.suggestions.map((s) => ({
+    visit_id: visit.id,
+    position: s.position,
+    title: s.title,
+    description: s.description,
+    image_url: s.image_url,
+    is_chosen: s.is_chosen,
+  }));
+  const { data: inserted, error: sugErr } = await supabase
+    .from("cut_suggestions")
+    .insert(rows)
+    .select();
+  if (sugErr) throw sugErr;
+
+  const chosen = (inserted ?? []).find((r) => r.is_chosen);
+  if (chosen) {
+    const { error: updErr } = await supabase
+      .from("visits")
+      .update({ chosen_cut_id: chosen.id })
+      .eq("id", visit.id);
+    if (updErr) throw updErr;
+  }
+  return visit;
+}
+
+// ---------- STORAGE ----------
+
+const PET_PHOTOS_BUCKET = "pet-photos";
+
+/** Sube una foto de mascota al bucket privado y devuelve { path, signedUrl }. */
+export async function uploadPetPhoto(
+  petId: string,
+  file: Blob,
+): Promise<{ path: string; signedUrl: string }> {
+  const ext = inferExt(file.type);
+  const path = `originals/${petId}/${crypto.randomUUID()}.${ext}`;
+  const { error: upErr } = await supabase.storage
+    .from(PET_PHOTOS_BUCKET)
+    .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
+  if (upErr) throw upErr;
+  const { data, error } = await supabase.storage
+    .from(PET_PHOTOS_BUCKET)
+    .createSignedUrl(path, 60 * 60 * 24 * 365);
+  if (error || !data?.signedUrl) throw error ?? new Error("No se pudo firmar la foto.");
+  return { path, signedUrl: data.signedUrl };
+}
+
+function inferExt(mime: string): string {
+  if (mime.includes("png")) return "png";
+  if (mime.includes("webp")) return "webp";
+  if (mime.includes("heic")) return "heic";
+  return "jpg";
 }

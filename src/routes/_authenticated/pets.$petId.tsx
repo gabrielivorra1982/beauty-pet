@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles } from "lucide-react";
+import { Pencil, Trash2, StickyNote, User as UserIcon, Sparkles, Camera } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ import {
   getPetWithOwner,
   listVisitsByPet,
   type PetWithOwner,
-  type Visit,
+  type VisitWithChosen,
 } from "@/lib/repository";
 
 export const Route = createFileRoute("/_authenticated/pets/$petId")({
@@ -33,7 +33,7 @@ function PetDetailPage() {
   const { petId } = Route.useParams();
   const navigate = useNavigate();
   const [pet, setPet] = useState<PetWithOwner | null | undefined>(undefined);
-  const [visits, setVisits] = useState<Visit[] | null>(null);
+  const [visits, setVisits] = useState<VisitWithChosen[] | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,9 +160,25 @@ function PetDetailPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {visits.map((v) => (
-                  <li key={v.id} className="py-2 text-sm">
-                    {new Date(v.visited_at).toLocaleDateString("es-ES")}
-                    {v.recognized_breed ? ` · ${v.recognized_breed}` : ""}
+                  <li key={v.id} className="flex items-center gap-3 py-2">
+                    <div className="size-12 shrink-0 overflow-hidden rounded-md border border-border bg-background-muted">
+                      {v.chosen_cut?.image_url ? (
+                        <img
+                          src={v.chosen_cut.image_url}
+                          alt={v.chosen_cut.title}
+                          className="block h-full w-full object-cover"
+                        />
+                      ) : null}
+                    </div>
+                    <div className="min-w-0 flex-1 text-sm">
+                      <p className="truncate font-medium">
+                        {v.chosen_cut?.title ?? "Sin corte elegido"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {new Date(v.visited_at).toLocaleDateString("es-ES")}
+                        {v.recognized_breed ? ` · ${v.recognized_breed}` : ""}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -170,9 +186,18 @@ function PetDetailPage() {
           </CardContent>
         </Card>
 
+        <Button asChild className="h-12 w-full">
+          <Link to="/pets/$petId/visit" params={{ petId }}>
+            <Camera /> Nueva visita
+          </Link>
+        </Button>
+
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="outline" className="h-11 w-full text-destructive hover:text-destructive">
+            <Button
+              variant="outline"
+              className="h-11 w-full text-destructive hover:text-destructive"
+            >
               <Trash2 /> Borrar mascota
             </Button>
           </AlertDialogTrigger>

@@ -5,7 +5,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { countOwners, countPets } from "@/lib/repository";
+import { countOwners, countPets, listRecentVisits, type RecentVisit } from "@/lib/repository";
 import { useAuth } from "@/contexts/auth";
 
 export const Route = createFileRoute("/_authenticated/app")({
@@ -16,15 +16,17 @@ function HomePage() {
   const { profile } = useAuth();
   const [pets, setPets] = useState<number | null>(null);
   const [owners, setOwners] = useState<number | null>(null);
+  const [recent, setRecent] = useState<RecentVisit[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([countPets(), countOwners()])
-      .then(([p, o]) => {
+    Promise.all([countPets(), countOwners(), listRecentVisits(5)])
+      .then(([p, o, r]) => {
         if (cancelled) return;
         setPets(p);
         setOwners(o);
+        setRecent(r);
       })
       .catch(() => !cancelled && setError("No se pudieron cargar los totales."));
     return () => {
@@ -69,9 +71,44 @@ function HomePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Sin actividad todavía. Las visitas aparecerán aquí cuando empieces a registrarlas.
-            </p>
+            {recent === null ? (
+              <Skeleton className="h-16 w-full" />
+            ) : recent.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Sin actividad todavía. Las visitas aparecerán aquí cuando empieces a registrarlas.
+              </p>
+            ) : (
+              <ul className="divide-y divide-border">
+                {recent.map((v) => (
+                  <li key={v.id} className="py-2">
+                    {v.pet ? (
+                      <Link
+                        to="/pets/$petId"
+                        params={{ petId: v.pet.id }}
+                        className="flex items-center gap-3"
+                      >
+                        <div className="size-10 shrink-0 overflow-hidden rounded-md border border-border bg-background-muted">
+                          {v.chosen_cut?.image_url ? (
+                            <img
+                              src={v.chosen_cut.image_url}
+                              alt={v.chosen_cut.title}
+                              className="block h-full w-full object-cover"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="min-w-0 flex-1 text-sm">
+                          <p className="truncate font-medium">{v.pet.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {new Date(v.visited_at).toLocaleDateString("es-ES")}
+                            {v.chosen_cut?.title ? ` · ${v.chosen_cut.title}` : ""}
+                          </p>
+                        </div>
+                      </Link>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>
