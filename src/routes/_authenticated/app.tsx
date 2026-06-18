@@ -65,6 +65,22 @@ function HomePage() {
           </Button>
         </section>
 
+        {profile?.role === "admin" ? (
+          <section className="grid grid-cols-2 gap-3">
+            <Button asChild variant="outline" className="h-12">
+              <Link to="/rewards">
+                <Gift /> Recompensas
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-12">
+              <Link to="/staff">
+                <UsersIcon /> Equipo
+              </Link>
+            </Button>
+          </section>
+        ) : null}
+
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
