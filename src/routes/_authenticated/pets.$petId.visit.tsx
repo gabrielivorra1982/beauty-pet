@@ -22,6 +22,7 @@ import {
   type PetWithOwner,
   type RewardRule,
 } from "@/lib/repository";
+import { compressImage } from "@/lib/image";
 
 import { cn } from "@/lib/utils";
 
