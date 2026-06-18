@@ -22,7 +22,7 @@ import {
   getPetWithOwner,
   listVisitsByPet,
   type PetWithOwner,
-  type Visit,
+  type VisitWithChosen,
 } from "@/lib/repository";
 
 export const Route = createFileRoute("/_authenticated/pets/$petId")({
