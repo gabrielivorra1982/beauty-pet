@@ -1,16 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { z } from "zod";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { AppShell } from "@/components/app-shell";
 import { PetForm } from "@/components/pet-form";
 import { createPet } from "@/lib/repository";
 
-const searchSchema = z.object({
-  ownerId: fallback(z.string().optional(), undefined),
-});
-
 export const Route = createFileRoute("/_authenticated/pets/new")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (search: Record<string, unknown>) => ({
+    ownerId: typeof search.ownerId === "string" ? search.ownerId : undefined,
+  }),
   component: NewPetPage,
 });
 
