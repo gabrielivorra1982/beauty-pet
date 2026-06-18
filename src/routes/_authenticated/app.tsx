@@ -142,6 +142,39 @@ function HomePage() {
   );
 }
 
+function HelpCard() {
+  const steps = [
+    "Busca o crea al dueño y a la mascota desde Dueños o Mascotas.",
+    "En la ficha de la mascota, pulsa “Nueva visita”.",
+    "Haz una foto con la cámara o elígela de la galería y analiza con IA.",
+    "Revisa las 4 sugerencias y selecciona el corte elegido.",
+    "Pulsa “Registrar visita” para guardar y sumar el sello de fidelidad.",
+  ];
+  return (
+    <Collapsible className="rounded-lg border border-border bg-card">
+      <CollapsibleTrigger asChild>
+        <button
+          type="button"
+          className="flex w-full items-center justify-between gap-2 rounded-lg px-4 py-3 text-left"
+          aria-label="Mostrar ayuda rápida"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">
+            <HelpCircle className="size-4 text-primary" /> Cómo registrar una visita
+          </span>
+          <span className="text-xs text-muted-foreground">Ver pasos</span>
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ol className="list-decimal space-y-2 px-8 pb-4 text-sm text-muted-foreground marker:text-primary">
+          {steps.map((s, i) => (
+            <li key={i}>{s}</li>
+          ))}
+        </ol>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 function StatCard({
   label,
   value,
