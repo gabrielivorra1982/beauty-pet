@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { deleteOwner, getOwnerWithPets, type Owner, type Pet } from "@/lib/repository";
 
-export const Route = createFileRoute("/_authenticated/owners/$ownerId")({
+export const Route = createFileRoute("/_authenticated/owners/$ownerId/")({
   component: OwnerDetailPage,
 });
 

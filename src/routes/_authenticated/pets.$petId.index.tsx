@@ -25,7 +25,7 @@ import {
   type VisitWithChosen,
 } from "@/lib/repository";
 
-export const Route = createFileRoute("/_authenticated/pets/$petId")({
+export const Route = createFileRoute("/_authenticated/pets/$petId/")({
   component: PetDetailPage,
 });
 
