@@ -131,6 +131,31 @@ function LoginPage() {
             ¿No tienes cuenta? Pídele a un administrador que te dé acceso.
           </p>
         </form>
+
+        <div className="mt-8 rounded-md border border-border bg-muted/40 p-4">
+          <p className="text-sm font-medium text-foreground">Acceso de demostración</p>
+          <dl className="mt-2 space-y-1 text-xs text-muted-foreground">
+            <div className="flex justify-between gap-2">
+              <dt>Email</dt>
+              <dd className="font-mono text-foreground">nico@gmail.com</dd>
+            </div>
+            <div className="flex justify-between gap-2">
+              <dt>Contraseña</dt>
+              <dd className="font-mono text-foreground">nico12345678</dd>
+            </div>
+          </dl>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setEmail("nico@gmail.com");
+              setPassword("nico12345678");
+            }}
+            className="mt-3 h-11 w-full"
+          >
+            Usar cuenta de demo
+          </Button>
+        </div>
       </div>
     </main>
   );
