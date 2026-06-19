@@ -230,6 +230,10 @@ export async function createVisitWithSuggestions(input: {
     image_url: s.image_url,
     is_chosen: s.is_chosen,
   }));
+  if (rows.length === 0) {
+    // Caso "sin_pelo": registro de cuidado sin corte; chosen_cut_id queda null.
+    return visit;
+  }
   const { data: inserted, error: sugErr } = await supabase
     .from("cut_suggestions")
     .insert(rows)
