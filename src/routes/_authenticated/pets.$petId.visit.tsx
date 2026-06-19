@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle, Gift, Share2 } from "lucide-react";
+import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle, AlertTriangle, Gift, Share2, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,8 +32,16 @@ export const Route = createFileRoute("/_authenticated/pets/$petId/visit")({
 });
 
 type Coat = "con_pelo" | "sin_pelo" | "desconocido";
+type Advice = "cortable" | "no_rapar_doble_capa" | "sin_pelo";
 type Suggestion = { title: string; description: string };
-type AnalyzeResult = { breed: string; coat: Coat; suggestions: Suggestion[] };
+type AnalyzeResult = {
+  breed: string;
+  coat: Coat;
+  groomable: boolean;
+  advice: Advice;
+  warning: string | null;
+  suggestions: Suggestion[];
+};
 
 type ImageState =
   | { status: "loading" }
@@ -110,11 +118,25 @@ function NewVisitPage() {
       if (fnErr || !data) {
         throw new Error(fnErr?.message ?? "No se pudo analizar la foto.");
       }
-      setAnalysis(data);
-      setImages(data.suggestions.map(() => ({ status: "loading" as const })));
+      // Compatibilidad defensiva con respuestas antiguas.
+      const normalized: AnalyzeResult = {
+        breed: data.breed,
+        coat: data.coat,
+        groomable: data.groomable ?? data.advice !== "sin_pelo",
+        advice: data.advice ?? "cortable",
+        warning: data.warning ?? null,
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+      };
+      setAnalysis(normalized);
+      if (normalized.advice === "sin_pelo") {
+        // No procede corte: no generamos imágenes.
+        setImages([]);
+        return;
+      }
+      setImages(normalized.suggestions.map(() => ({ status: "loading" as const })));
       // Disparar las 4 imágenes en paralelo, pasando la URL original recién firmada.
-      data.suggestions.forEach((s, idx) => {
-        void generateImage(idx, s, data.breed, data.coat, signedUrl);
+      normalized.suggestions.forEach((s, idx) => {
+        void generateImage(idx, s, normalized.breed, normalized.coat, signedUrl);
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al analizar.");
@@ -171,7 +193,9 @@ function NewVisitPage() {
 
 
   async function confirmVisit() {
-    if (!analysis || chosen === null) return;
+    if (!analysis) return;
+    const isSinPelo = analysis.advice === "sin_pelo";
+    if (!isSinPelo && chosen === null) return;
     setSaving(true);
     setError(null);
     try {
@@ -181,16 +205,18 @@ function NewVisitPage() {
         photo_url: photoUrl,
         recognized_breed: analysis.breed,
         recognized_coat: analysis.coat,
-        suggestions: analysis.suggestions.map((s, idx) => {
-          const img = images[idx];
-          return {
-            position: idx + 1,
-            title: s.title,
-            description: s.description,
-            image_url: img && img.status === "ready" ? img.url : null,
-            is_chosen: idx === chosen,
-          };
-        }),
+        suggestions: isSinPelo
+          ? []
+          : analysis.suggestions.map((s, idx) => {
+              const img = images[idx];
+              return {
+                position: idx + 1,
+                title: s.title,
+                description: s.description,
+                image_url: img && img.status === "ready" ? img.url : null,
+                is_chosen: idx === chosen,
+              };
+            }),
       });
       setCelebration(result);
       setSaving(false);
@@ -369,8 +395,38 @@ function NewVisitPage() {
           </section>
         ) : null}
 
-        {/* 3. SUGERENCIAS */}
-        {analysis ? (
+        {/* 2.b AVISO DE LA IA */}
+        {analysis?.warning ? (
+          <div
+            role="alert"
+            className={cn(
+              "flex items-start gap-2 rounded-md border p-3 text-sm",
+              analysis.advice === "sin_pelo"
+                ? "border-destructive/40 bg-destructive/5 text-destructive"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200",
+            )}
+          >
+            {analysis.advice === "sin_pelo" ? (
+              <Info className="mt-0.5 size-4 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            )}
+            <p className="leading-snug">{analysis.warning}</p>
+          </div>
+        ) : null}
+
+        {/* 3. SUGERENCIAS o ESTADO "no procede corte" */}
+        {analysis && analysis.advice === "sin_pelo" ? (
+          <section className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Resultado</p>
+            <div className="rounded-lg border border-dashed border-border bg-muted/40 p-6 text-center">
+              <p className="text-base font-medium">No procede corte</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Esta mascota no necesita corte de pelo. Puedes registrar la visita como cuidado igualmente.
+              </p>
+            </div>
+          </section>
+        ) : analysis ? (
           <section className="space-y-2">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               Sugerencias de corte
@@ -458,12 +514,14 @@ function NewVisitPage() {
                 type="button"
                 className="h-12 flex-1"
                 onClick={confirmVisit}
-                disabled={chosen === null || saving}
+                disabled={saving || (analysis.advice !== "sin_pelo" && chosen === null)}
               >
                 {saving ? (
                   <>
                     <Loader2 className="animate-spin motion-reduce:animate-none" /> Guardando…
                   </>
+                ) : analysis.advice === "sin_pelo" ? (
+                  "Registrar cuidado"
                 ) : (
                   "Registrar visita"
                 )}
