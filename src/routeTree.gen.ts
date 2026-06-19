@@ -10,11 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as DebugRouteImport } from './routes/debug'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedRewardsRouteImport } from './routes/_authenticated/rewards'
+import { Route as AuthenticatedDebugRouteImport } from './routes/_authenticated/debug'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedPetsIndexRouteImport } from './routes/_authenticated/pets.index'
 import { Route as AuthenticatedOwnersIndexRouteImport } from './routes/_authenticated/owners.index'
@@ -31,11 +31,6 @@ import { Route as AuthenticatedOwnersOwnerIdEditRouteImport } from './routes/_au
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DebugRoute = DebugRouteImport.update({
-  id: '/debug',
-  path: '/debug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -55,6 +50,11 @@ const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
 const AuthenticatedRewardsRoute = AuthenticatedRewardsRouteImport.update({
   id: '/rewards',
   path: '/rewards',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDebugRoute = AuthenticatedDebugRouteImport.update({
+  id: '/debug',
+  path: '/debug',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAppRoute = AuthenticatedAppRouteImport.update({
@@ -127,9 +127,9 @@ const AuthenticatedOwnersOwnerIdEditRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/debug': typeof DebugRoute
   '/login': typeof LoginRoute
   '/app': typeof AuthenticatedAppRoute
+  '/debug': typeof AuthenticatedDebugRoute
   '/rewards': typeof AuthenticatedRewardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRouteWithChildren
@@ -146,9 +146,9 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/debug': typeof DebugRoute
   '/login': typeof LoginRoute
   '/app': typeof AuthenticatedAppRoute
+  '/debug': typeof AuthenticatedDebugRoute
   '/rewards': typeof AuthenticatedRewardsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/owners/new': typeof AuthenticatedOwnersNewRoute
@@ -165,9 +165,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/debug': typeof DebugRoute
   '/login': typeof LoginRoute
   '/_authenticated/app': typeof AuthenticatedAppRoute
+  '/_authenticated/debug': typeof AuthenticatedDebugRoute
   '/_authenticated/rewards': typeof AuthenticatedRewardsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/owners/$ownerId': typeof AuthenticatedOwnersOwnerIdRouteWithChildren
@@ -186,9 +186,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/debug'
     | '/login'
     | '/app'
+    | '/debug'
     | '/rewards'
     | '/staff'
     | '/owners/$ownerId'
@@ -205,9 +205,9 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/debug'
     | '/login'
     | '/app'
+    | '/debug'
     | '/rewards'
     | '/staff'
     | '/owners/new'
@@ -223,9 +223,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
-    | '/debug'
     | '/login'
     | '/_authenticated/app'
+    | '/_authenticated/debug'
     | '/_authenticated/rewards'
     | '/_authenticated/staff'
     | '/_authenticated/owners/$ownerId'
@@ -244,7 +244,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  DebugRoute: typeof DebugRoute
   LoginRoute: typeof LoginRoute
 }
 
@@ -255,13 +254,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/debug': {
-      id: '/debug'
-      path: '/debug'
-      fullPath: '/debug'
-      preLoaderRoute: typeof DebugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -290,6 +282,13 @@ declare module '@tanstack/react-router' {
       path: '/rewards'
       fullPath: '/rewards'
       preLoaderRoute: typeof AuthenticatedRewardsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/debug': {
+      id: '/_authenticated/debug'
+      path: '/debug'
+      fullPath: '/debug'
+      preLoaderRoute: typeof AuthenticatedDebugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/app': {
@@ -415,6 +414,7 @@ const AuthenticatedPetsPetIdRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppRoute: typeof AuthenticatedAppRoute
+  AuthenticatedDebugRoute: typeof AuthenticatedDebugRoute
   AuthenticatedRewardsRoute: typeof AuthenticatedRewardsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedOwnersOwnerIdRoute: typeof AuthenticatedOwnersOwnerIdRouteWithChildren
@@ -427,6 +427,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppRoute: AuthenticatedAppRoute,
+  AuthenticatedDebugRoute: AuthenticatedDebugRoute,
   AuthenticatedRewardsRoute: AuthenticatedRewardsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedOwnersOwnerIdRoute: AuthenticatedOwnersOwnerIdRouteWithChildren,
@@ -443,7 +444,6 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  DebugRoute: DebugRoute,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport

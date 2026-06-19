@@ -1,6 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/auth";
 import {
   listPetsWithOwner,
   listOwners,
@@ -9,7 +10,7 @@ import {
   type PetWithOwner,
 } from "@/lib/repository";
 
-export const Route = createFileRoute("/debug")({
+export const Route = createFileRoute("/_authenticated/debug")({
   head: () => ({
     meta: [
       { title: "Debug — Kiwoko" },
@@ -20,6 +21,24 @@ export const Route = createFileRoute("/debug")({
 });
 
 function DebugPage() {
+  const { profile, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && profile && profile.role !== "admin") {
+      navigate({ to: "/app" });
+    }
+  }, [loading, profile, navigate]);
+
+  if (loading || !profile) {
+    return <main className="p-6 text-sm text-muted-foreground">Cargando…</main>;
+  }
+  if (profile.role !== "admin") return null;
+
+  return <DebugPageInner />;
+}
+
+function DebugPageInner() {
   const qc = useQueryClient();
   const [lastResult, setLastResult] = useState<string>("");
 
