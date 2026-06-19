@@ -118,11 +118,25 @@ function NewVisitPage() {
       if (fnErr || !data) {
         throw new Error(fnErr?.message ?? "No se pudo analizar la foto.");
       }
-      setAnalysis(data);
-      setImages(data.suggestions.map(() => ({ status: "loading" as const })));
+      // Compatibilidad defensiva con respuestas antiguas.
+      const normalized: AnalyzeResult = {
+        breed: data.breed,
+        coat: data.coat,
+        groomable: data.groomable ?? data.advice !== "sin_pelo",
+        advice: data.advice ?? "cortable",
+        warning: data.warning ?? null,
+        suggestions: Array.isArray(data.suggestions) ? data.suggestions : [],
+      };
+      setAnalysis(normalized);
+      if (normalized.advice === "sin_pelo") {
+        // No procede corte: no generamos imágenes.
+        setImages([]);
+        return;
+      }
+      setImages(normalized.suggestions.map(() => ({ status: "loading" as const })));
       // Disparar las 4 imágenes en paralelo, pasando la URL original recién firmada.
-      data.suggestions.forEach((s, idx) => {
-        void generateImage(idx, s, data.breed, data.coat, signedUrl);
+      normalized.suggestions.forEach((s, idx) => {
+        void generateImage(idx, s, normalized.breed, normalized.coat, signedUrl);
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error al analizar.");
