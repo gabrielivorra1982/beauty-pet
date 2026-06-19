@@ -395,8 +395,38 @@ function NewVisitPage() {
           </section>
         ) : null}
 
-        {/* 3. SUGERENCIAS */}
-        {analysis ? (
+        {/* 2.b AVISO DE LA IA */}
+        {analysis?.warning ? (
+          <div
+            role="alert"
+            className={cn(
+              "flex items-start gap-2 rounded-md border p-3 text-sm",
+              analysis.advice === "sin_pelo"
+                ? "border-destructive/40 bg-destructive/5 text-destructive"
+                : "border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200",
+            )}
+          >
+            {analysis.advice === "sin_pelo" ? (
+              <Info className="mt-0.5 size-4 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+            )}
+            <p className="leading-snug">{analysis.warning}</p>
+          </div>
+        ) : null}
+
+        {/* 3. SUGERENCIAS o ESTADO "no procede corte" */}
+        {analysis && analysis.advice === "sin_pelo" ? (
+          <section className="space-y-2">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground">Resultado</p>
+            <div className="rounded-lg border border-dashed border-border bg-muted/40 p-6 text-center">
+              <p className="text-base font-medium">No procede corte</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Esta mascota no necesita corte de pelo. Puedes registrar la visita como cuidado igualmente.
+              </p>
+            </div>
+          </section>
+        ) : analysis ? (
           <section className="space-y-2">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               Sugerencias de corte
@@ -484,12 +514,14 @@ function NewVisitPage() {
                 type="button"
                 className="h-12 flex-1"
                 onClick={confirmVisit}
-                disabled={chosen === null || saving}
+                disabled={saving || (analysis.advice !== "sin_pelo" && chosen === null)}
               >
                 {saving ? (
                   <>
                     <Loader2 className="animate-spin motion-reduce:animate-none" /> Guardando…
                   </>
+                ) : analysis.advice === "sin_pelo" ? (
+                  "Registrar cuidado"
                 ) : (
                   "Registrar visita"
                 )}
