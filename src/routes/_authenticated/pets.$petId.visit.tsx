@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle, Gift, Share2 } from "lucide-react";
+import { Camera, Image as ImageIcon, RefreshCw, Check, Loader2, AlertCircle, AlertTriangle, Gift, Share2, Info } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
