@@ -193,7 +193,9 @@ function NewVisitPage() {
 
 
   async function confirmVisit() {
-    if (!analysis || chosen === null) return;
+    if (!analysis) return;
+    const isSinPelo = analysis.advice === "sin_pelo";
+    if (!isSinPelo && chosen === null) return;
     setSaving(true);
     setError(null);
     try {
@@ -203,16 +205,18 @@ function NewVisitPage() {
         photo_url: photoUrl,
         recognized_breed: analysis.breed,
         recognized_coat: analysis.coat,
-        suggestions: analysis.suggestions.map((s, idx) => {
-          const img = images[idx];
-          return {
-            position: idx + 1,
-            title: s.title,
-            description: s.description,
-            image_url: img && img.status === "ready" ? img.url : null,
-            is_chosen: idx === chosen,
-          };
-        }),
+        suggestions: isSinPelo
+          ? []
+          : analysis.suggestions.map((s, idx) => {
+              const img = images[idx];
+              return {
+                position: idx + 1,
+                title: s.title,
+                description: s.description,
+                image_url: img && img.status === "ready" ? img.url : null,
+                is_chosen: idx === chosen,
+              };
+            }),
       });
       setCelebration(result);
       setSaving(false);
