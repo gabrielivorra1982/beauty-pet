@@ -32,8 +32,16 @@ export const Route = createFileRoute("/_authenticated/pets/$petId/visit")({
 });
 
 type Coat = "con_pelo" | "sin_pelo" | "desconocido";
+type Advice = "cortable" | "no_rapar_doble_capa" | "sin_pelo";
 type Suggestion = { title: string; description: string };
-type AnalyzeResult = { breed: string; coat: Coat; suggestions: Suggestion[] };
+type AnalyzeResult = {
+  breed: string;
+  coat: Coat;
+  groomable: boolean;
+  advice: Advice;
+  warning: string | null;
+  suggestions: Suggestion[];
+};
 
 type ImageState =
   | { status: "loading" }
