@@ -1,6 +1,9 @@
 name: Supabase - comprobar actividad de base de datos
 
 on:
+  push:
+    paths:
+      - '.github/workflows/supabase-db-check.yml'
   schedule:
     # Tres consultas de lectura al dia (UTC). GitHub puede retrasar los horarios.
     - cron: '41 5,13,21 * * *'
