@@ -1,0 +1,64 @@
+name: Supabase - comprobar actividad de base de datos
+
+on:
+  schedule:
+    # Tres consultas de lectura al dia (UTC). GitHub puede retrasar los horarios.
+    - cron: '41 5,13,21 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  database-check:
+    name: Consulta real de PostgREST
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Consultar tabla publica sin modificar datos
+        env:
+          CHECK_TABLE: visits
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import os
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+          from pathlib import Path
+
+          values = {}
+          for line in Path(".env").read_text(encoding="utf-8").splitlines():
+              line = line.strip()
+              if not line or line.startswith("#") or "=" not in line:
+                  continue
+              name, value = line.split("=", 1)
+              values[name.strip()] = value.strip().strip('"').strip("'")
+
+          url = (values.get("SUPABASE_URL") or values.get("VITE_SUPABASE_URL") or "").rstrip("/")
+          key = values.get("SUPABASE_PUBLISHABLE_KEY") or values.get("VITE_SUPABASE_PUBLISHABLE_KEY")
+          if not url.startswith("https://") or ".supabase.co" not in url or not key:
+              raise SystemExit("Falta la URL o la clave publica de Supabase en .env")
+
+          table = urllib.parse.quote(os.environ["CHECK_TABLE"], safe="")
+          endpoint = f"{url}/rest/v1/{table}?select=id&limit=1"
+          request = urllib.request.Request(
+              endpoint,
+              headers={
+                  "apikey": key,
+                  "Accept": "application/json",
+                  "Cache-Control": "no-cache",
+              },
+              method="GET",
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  response.read(2048)
+                  print(f"Consulta PostgREST correcta: HTTP {response.status}")
+          except urllib.error.HTTPError as error:
+              raise SystemExit(f"Consulta fallida: HTTP {error.code}. Revisar proyecto, permisos y pausa.") from None
+          except urllib.error.URLError as error:
+              raise SystemExit(f"Sin conexion con Supabase: {error.reason}") from None
+          PY
