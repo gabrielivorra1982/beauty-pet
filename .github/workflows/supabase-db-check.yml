@@ -20,15 +20,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Consultar tabla publica sin modificar datos
-        env:
-          CHECK_TABLE: visits
+      - name: Comprobar API PostgreSQL sin consultar datos privados
         shell: bash
         run: |
           python3 - <<'PY'
-          import os
           import urllib.error
-          import urllib.parse
           import urllib.request
           from pathlib import Path
 
@@ -42,26 +38,20 @@ jobs:
 
           url = (values.get("SUPABASE_URL") or values.get("VITE_SUPABASE_URL") or "").rstrip("/")
           key = values.get("SUPABASE_PUBLISHABLE_KEY") or values.get("VITE_SUPABASE_PUBLISHABLE_KEY")
-          if not url.startswith("https://") or ".supabase.co" not in url or not key:
-              raise SystemExit("Falta la URL o la clave publica de Supabase en .env")
+          if not url.startswith("https://") or not url.endswith(".supabase.co") or not key:
+              raise SystemExit("Falta una URL o clave publica valida en el archivo de configuracion")
 
-          table = urllib.parse.quote(os.environ["CHECK_TABLE"], safe="")
-          endpoint = f"{url}/rest/v1/{table}?select=id&limit=1"
           request = urllib.request.Request(
-              endpoint,
-              headers={
-                  "apikey": key,
-                  "Accept": "application/json",
-                  "Cache-Control": "no-cache",
-              },
+              f"{url}/rest/v1/",
+              headers={"apikey": key, "Accept": "application/openapi+json", "Cache-Control": "no-cache"},
               method="GET",
           )
           try:
-              with urllib.request.urlopen(request, timeout=30) as response:
-                  response.read(2048)
-                  print(f"Consulta PostgREST correcta: HTTP {response.status}")
+              with urllib.request.urlopen(request, timeout=40) as response:
+                  response.read(256)
+                  print(f"API de base de datos responde HTTP {response.status}")
           except urllib.error.HTTPError as error:
-              raise SystemExit(f"Consulta fallida: HTTP {error.code}. Revisar proyecto, permisos y pausa.") from None
-          except urllib.error.URLError as error:
-              raise SystemExit(f"Sin conexion con Supabase: {error.reason}") from None
+              raise SystemExit(f"API no disponible: HTTP {error.code}. Revisar pausa y credenciales.") from None
+          except (urllib.error.URLError, TimeoutError) as error:
+              raise SystemExit(f"API inaccesible: {error.__class__.__name__}") from None
           PY
