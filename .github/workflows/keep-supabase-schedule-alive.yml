@@ -1,0 +1,35 @@
+name: Evitar suspension del cron en repositorio publico
+
+on:
+  schedule:
+    - cron: '43 7 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  keep-cron-enabled:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout de main
+        uses: actions/checkout@v4
+      - name: Registrar actividad solo cada 3 semanas sin cambios
+        shell: bash
+        run: |
+          set -euo pipefail
+          now=$(date -u +%s)
+          latest=$(git log -1 --format=%ct)
+          # GitHub desactiva cron en repos publicos tras 60 dias sin actividad.
+          if (( now - latest < 21 * 86400 )); then
+            echo "El repositorio tiene actividad reciente. No hace falta un commit."
+            exit 0
+          fi
+          mkdir -p .github/status
+          date -u +%Y-%m-%dT%H:%M:%SZ > .github/status/last-activity.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/status/last-activity.txt
+          git commit -m "chore: mantener programaciones activas [skip ci]"
+          git push
