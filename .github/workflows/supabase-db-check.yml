@@ -1,11 +1,10 @@
-name: Supabase - comprobar actividad de base de datos
+name: Supabase - consulta a la base de datos
 
 on:
   push:
     paths:
       - '.github/workflows/supabase-db-check.yml'
   schedule:
-    # Tres consultas de lectura al dia (UTC). GitHub puede retrasar los horarios.
     - cron: '41 5,13,21 * * *'
   workflow_dispatch:
 
@@ -14,44 +13,55 @@ permissions:
 
 jobs:
   database-check:
-    name: Consulta real de PostgREST
+    name: Lectura PostgREST sin cambios
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Comprobar API PostgreSQL sin consultar datos privados
+      - name: Consultar tabla de Supabase de solo lectura
+        env:
+          CHECK_TABLE: visits
         shell: bash
         run: |
           python3 - <<'PY'
+          import os
           import urllib.error
+          import urllib.parse
           import urllib.request
           from pathlib import Path
 
-          values = {}
+          config = {}
           for line in Path(".env").read_text(encoding="utf-8").splitlines():
-              line = line.strip()
-              if not line or line.startswith("#") or "=" not in line:
+              if not line.strip() or line.lstrip().startswith("#") or "=" not in line:
                   continue
-              name, value = line.split("=", 1)
-              values[name.strip()] = value.strip().strip('"').strip("'")
+              key, value = line.split("=", 1)
+              config[key.strip()] = value.strip().strip("'").strip('"')
 
-          url = (values.get("SUPABASE_URL") or values.get("VITE_SUPABASE_URL") or "").rstrip("/")
-          key = values.get("SUPABASE_PUBLISHABLE_KEY") or values.get("VITE_SUPABASE_PUBLISHABLE_KEY")
-          if not url.startswith("https://") or not url.endswith(".supabase.co") or not key:
-              raise SystemExit("Falta una URL o clave publica valida en el archivo de configuracion")
+          url = (config.get("VITE_SUPABASE_URL") or config.get("SUPABASE_URL") or "").rstrip("/")
+          apikey = config.get("VITE_SUPABASE_PUBLISHABLE_KEY") or config.get("SUPABASE_PUBLISHABLE_KEY")
+          if not url.startswith("https://") or not url.endswith(".supabase.co") or not apikey:
+              raise SystemExit("ERROR: faltan URL o clave publica en .env")
 
-          request = urllib.request.Request(
-              f"{url}/rest/v1/",
-              headers={"apikey": key, "Accept": "application/openapi+json", "Cache-Control": "no-cache"},
-              method="GET",
-          )
+          headers = {"apikey": apikey, "Accept": "application/json", "Cache-Control": "no-cache"}
+          # Las claves JWT antiguas admiten bearer. Las nuevas se envian solo como apikey.
+          if apikey.startswith("eyJ"):
+              headers["Authorization"] = "Bearer " + apikey
+
+          table = urllib.parse.quote(os.environ["CHECK_TABLE"], safe="")
+          endpoint = f"{url}/rest/v1/{table}?select=id&limit=1"
+          request = urllib.request.Request(endpoint, headers=headers, method="GET")
           try:
-              with urllib.request.urlopen(request, timeout=40) as response:
-                  response.read(256)
-                  print(f"API de base de datos responde HTTP {response.status}")
+              with urllib.request.urlopen(request, timeout=35) as response:
+                  response.read(1024)
+                  print("OK: lectura real de Supabase, HTTP", response.status)
           except urllib.error.HTTPError as error:
-              raise SystemExit(f"API no disponible: HTTP {error.code}. Revisar pausa y credenciales.") from None
+              print("ERROR: Supabase responde HTTP", error.code)
+              if error.code == 540:
+                  print("El proyecto esta pausado: restaurarlo desde Supabase Dashboard.")
+              elif error.code in (401, 403):
+                  print("Revisar API key, permisos RLS y estado del proyecto.")
+              raise SystemExit(1)
           except (urllib.error.URLError, TimeoutError) as error:
-              raise SystemExit(f"API inaccesible: {error.__class__.__name__}") from None
+              raise SystemExit("ERROR: no se pudo conectar al proyecto Supabase.") from None
           PY
